@@ -6,7 +6,8 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -62,10 +63,10 @@ function SortableProductItem({ product }: SortableProductItemProps) {
       className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-gray-500 transition"
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        {/* Drag Handle – this is where listeners go */}
+        {/* Drag Handle – touch events work here now */}
         <div
           {...listeners}
-          className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-gray-300 select-none"
+          className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-gray-300 select-none touch-none"
           title="Drag to reorder"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -79,16 +80,22 @@ function SortableProductItem({ product }: SortableProductItemProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 md:gap-3 ml-4 shrink-0">
-        <div className="hidden md:flex gap-2">
+      {/* 
+        ✅ FIX 1: Removed "hidden md:flex" – badges now show on ALL screen sizes 
+        Including mobile, just like you wanted.
+      */}
+      <div className="flex items-center gap-1 md:gap-2 ml-2 flex-shrink-0">
+        <div className="flex gap-1 md:gap-2 flex-wrap items-center">
           {product.is_pre_order && (
-            <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full">Pre-Order</span>
+            <span className="text-[10px] md:text-xs bg-yellow-900 text-yellow-300 px-1.5 md:px-2 py-0.5 md:py-1 rounded-full whitespace-nowrap">
+              Pre-Order
+            </span>
           )}
-          <span className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded-full capitalize">
+          <span className="text-[10px] md:text-xs bg-gray-700 text-gray-300 px-1.5 md:px-2 py-0.5 md:py-1 rounded-full capitalize whitespace-nowrap">
             {product.product_type}
           </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 md:gap-1">
           <EditProductButton product={product} />
           <DeleteProductButton productId={product.id} productName={product.name} />
         </div>
@@ -105,8 +112,15 @@ export default function ProductSortableList({ products }: ProductSortableListPro
   const [items, setItems] = useState(products)
   const [isUpdating, setIsUpdating] = useState(false)
 
+  // ✅ FIX 2: Proper sensors for mobile touch dragging
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(MouseSensor),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200, // 200ms hold to activate drag (prevents scroll conflicts)
+        tolerance: 5, // allow 5px movement before cancelling
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -120,18 +134,15 @@ export default function ProductSortableList({ products }: ProductSortableListPro
     const newIndex = items.findIndex((item) => item.id === over.id)
     const newItems = arrayMove(items, oldIndex, newIndex)
 
-    // Update UI immediately
     setItems(newItems)
     setIsUpdating(true)
 
-    // Build updates
     const updates = newItems.map((item, index) => ({
       id: item.id,
       display_order: index,
     }))
 
     try {
-      // Send all updates in parallel for speed
       const results = await Promise.all(
         updates.map((update) =>
           supabase
@@ -141,14 +152,12 @@ export default function ProductSortableList({ products }: ProductSortableListPro
         )
       )
 
-      // Check for errors
       const errors = results.filter((result) => result.error)
       if (errors.length > 0) {
         console.error('Some updates failed:', errors)
         alert('Failed to update product order. Please try again.')
       } else {
         console.log('Product order updated successfully!')
-        // Reload the admin page to refresh the list order
         window.location.reload()
       }
     } catch (error) {
@@ -181,7 +190,8 @@ export default function ProductSortableList({ products }: ProductSortableListPro
         </SortableContext>
       </DndContext>
       <p className="text-gray-500 text-xs mt-3">
-        Drag the <strong>hamburger icon (⠿)</strong> to reorder products. First item appears first on the storefront.
+        Drag the <strong>hamburger icon (⠿)</strong> to reorder products. 
+        <span className="block md:inline"> On mobile, <strong>tap and hold</strong> the icon for a moment before dragging.</span>
       </p>
     </div>
   )

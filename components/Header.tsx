@@ -46,7 +46,7 @@ export default function Header() {
           - bg-black is fully opaque, so the text is perfectly legible.
         */}
         <div
-          className={`fixed top-16 right-0 h-[calc(100vh-4rem)] w-64 bg-black border-l border-gray-700 transform transition-transform duration-300 ease-in-out ${
+          className={`fixed top-16 right-0 h-[calc(100vh-4rem)] w-64 bg-black/50 backdrop-blur-sm border-l border-gray-700 transform transition-transform duration-300 ease-in-out ${
             isMenuOpen ? 'translate-x-0' : 'translate-x-full'
           } md:hidden`}
         >

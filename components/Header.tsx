@@ -39,18 +39,18 @@ export default function Header() {
           </button>
         </div>
 
-        {/* Mobile Navigation – FULLY SOLID BLACK */}
+        {/* 
+          ✅ FIXED: Mobile menu now slides in BELOW the header.
+          - top-16 (header height) so it doesn't cover the logo or hamburger icon.
+          - h-[calc(100vh-4rem)] to fill the remaining screen height.
+          - bg-black is fully opaque, so the text is perfectly legible.
+        */}
         <div
-          className={`fixed top-0 right-0 h-full w-64 bg-black border-l border-gray-700 transform transition-transform duration-300 ease-in-out ${
+          className={`fixed top-16 right-0 h-[calc(100vh-4rem)] w-64 bg-black border-l border-gray-700 transform transition-transform duration-300 ease-in-out ${
             isMenuOpen ? 'translate-x-0' : 'translate-x-full'
           } md:hidden`}
         >
-          <div className="flex flex-col items-start p-6 space-y-4 mt-16">
-            <button onClick={() => setIsMenuOpen(false)} className="self-end text-gray-400 hover:text-white">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+          <div className="flex flex-col items-start p-6 space-y-4">
             <Link href="/shop" className="text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Shop</Link>
             <Link href="/about" className="text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>About</Link>
             <Link href="/contact" className="text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Contact</Link>

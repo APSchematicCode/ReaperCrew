@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import {
   DndContext,
@@ -60,13 +59,26 @@ function SortableProductItem({ product }: SortableProductItemProps) {
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
-      className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-gray-500 transition cursor-grab active:cursor-grabbing"
+      className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-gray-500 transition"
     >
-      <div className="flex-1 min-w-0">
-        <p className="text-white text-sm md:text-base truncate">{product.name}</p>
-        <p className="text-gray-400 text-xs">${(product.price / 100).toFixed(2)}</p>
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        {/* Drag Handle – this is where listeners go */}
+        <div
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-gray-300 select-none"
+          title="Drag to reorder"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+          </svg>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="text-white text-sm md:text-base truncate">{product.name}</p>
+          <p className="text-gray-400 text-xs">${(product.price / 100).toFixed(2)}</p>
+        </div>
       </div>
+
       <div className="flex items-center gap-2 md:gap-3 ml-4 shrink-0">
         <div className="hidden md:flex gap-2">
           {product.is_pre_order && (
@@ -90,7 +102,6 @@ interface ProductSortableListProps {
 }
 
 export default function ProductSortableList({ products }: ProductSortableListProps) {
-  const router = useRouter()
   const [items, setItems] = useState(products)
   const [isUpdating, setIsUpdating] = useState(false)
 
@@ -109,30 +120,42 @@ export default function ProductSortableList({ products }: ProductSortableListPro
     const newIndex = items.findIndex((item) => item.id === over.id)
     const newItems = arrayMove(items, oldIndex, newIndex)
 
-    // Update local state immediately for smooth UI
+    // Update UI immediately
     setItems(newItems)
     setIsUpdating(true)
 
-    // Prepare updates: assign new display_order based on index
+    // Build updates
     const updates = newItems.map((item, index) => ({
       id: item.id,
       display_order: index,
     }))
 
-    // Send updates to Supabase in bulk
     try {
-      for (const update of updates) {
-        await supabase
-          .from('products')
-          .update({ display_order: update.display_order })
-          .eq('id', update.id)
+      // Send all updates in parallel for speed
+      const results = await Promise.all(
+        updates.map((update) =>
+          supabase
+            .from('products')
+            .update({ display_order: update.display_order })
+            .eq('id', update.id)
+        )
+      )
+
+      // Check for errors
+      const errors = results.filter((result) => result.error)
+      if (errors.length > 0) {
+        console.error('Some updates failed:', errors)
+        alert('Failed to update product order. Please try again.')
+      } else {
+        console.log('Product order updated successfully!')
+        // Reload the admin page to refresh the list order
+        window.location.reload()
       }
     } catch (error) {
-      console.error('Failed to update order:', error)
+      console.error('Update error:', error)
+      alert('An error occurred while updating order.')
     } finally {
       setIsUpdating(false)
-      // Refresh the server component to get fresh data
-      window.location.reload()
     }
   }
 
@@ -157,7 +180,9 @@ export default function ProductSortableList({ products }: ProductSortableListPro
           </div>
         </SortableContext>
       </DndContext>
-      <p className="text-gray-500 text-xs mt-3">Drag items to reorder. First item appears first on the storefront.</p>
+      <p className="text-gray-500 text-xs mt-3">
+        Drag the <strong>hamburger icon (⠿)</strong> to reorder products. First item appears first on the storefront.
+      </p>
     </div>
   )
 }

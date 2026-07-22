@@ -25,3 +25,4 @@ export default async function ShopPage() {
     </main>
   )
 }
+export const revalidate = 0 // Always fetch fresh data on every request

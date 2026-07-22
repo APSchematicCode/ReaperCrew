@@ -31,3 +31,4 @@ export default async function Home() {
     </main>
   )
 }
+export const revalidate = 0 // Always fetch fresh data on every request

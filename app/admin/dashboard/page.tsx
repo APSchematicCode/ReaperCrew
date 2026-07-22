@@ -5,6 +5,7 @@ import EditProductButton from '../components/EditProductButton'
 import DeleteProductButton from '../components/DeleteProductButton'
 import AddSlideButton from '../components/AddSlideButton'
 import SlidesList from '../components/SlidesList'
+import ProductSortableList from '../components/ProductSortableList'
 
 export default async function AdminDashboard() {
   const supabase = await createServerSupabaseClient()
@@ -28,6 +29,7 @@ export default async function AdminDashboard() {
   const { data: products } = await supabase
     .from('products')
     .select('*')
+    .order('display_order', { ascending: true })
     .order('created_at', { ascending: false })
 
   // Fetch slides (ordered by display_order)
@@ -48,48 +50,8 @@ export default async function AdminDashboard() {
           <AddProductButtonWrapper />
         </div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden mb-12">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-gray-800 border-b border-gray-700">
-                <tr>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-300">Name</th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-300">Price</th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-300">Type</th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-300">Pre-Order</th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-300 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products && products.length > 0 ? (
-                  products.map((product) => (
-                    <tr key={product.id} className="border-b border-gray-800 hover:bg-gray-800/50 transition">
-                      <td className="px-4 py-3 text-white">{product.name}</td>
-                      <td className="px-4 py-3 text-gray-300">${(product.price / 100).toFixed(2)}</td>
-                      <td className="px-4 py-3 text-gray-300 capitalize">{product.product_type}</td>
-                      <td className="px-4 py-3">
-                        {product.is_pre_order ? (
-                          <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full">Yes</span>
-                        ) : (
-                          <span className="text-xs bg-gray-700 text-gray-400 px-2 py-1 rounded-full">No</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <EditProductButton product={product} />
-                        <DeleteProductButton productId={product.id} productName={product.name} />
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
-                      No products yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 md:p-6">
+            <ProductSortableList products={products || []} />
         </div>
 
         {/* ========== SLIDESHOW SECTION ========== */}

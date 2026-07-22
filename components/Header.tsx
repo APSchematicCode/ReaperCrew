@@ -41,9 +41,9 @@ export default function Header() {
 
         {/* Mobile Navigation (slide-in from right) */}
         <div
-          className={`fixed top-0 right-0 h-full w-64 bg-black/95 backdrop-blur-sm border-l border-gray-800 transform transition-transform duration-300 ease-in-out ${
+          className={`fixed top-0 right-0 h-full w-64 bg-black border-l border-gray-800 transform transition-transform duration-300 ease-in-out ${
             isMenuOpen ? 'translate-x-0' : 'translate-x-full'
-          } md:hidden`}
+            } md:hidden`}
         >
           <div className="flex flex-col items-start p-6 space-y-4 mt-16">
             <button onClick={() => setIsMenuOpen(false)} className="self-end text-gray-400 hover:text-white">

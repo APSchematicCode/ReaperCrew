@@ -7,6 +7,7 @@ export default async function ShopPage() {
   const { data: products, error: productsError } = await supabase
     .from('products')
     .select('*')
+    .order('display_order', { ascending: true })
     .order('created_at', { ascending: false })
 
   if (productsError) {

@@ -15,6 +15,7 @@ export default async function Home() {
     .from('slides')
     .select('*')
     .order('display_order', { ascending: true })
+    .order('created_at', { ascending: false })
 
   if (productsError) console.error('Error fetching products:', productsError)
   if (slidesError) console.error('Error fetching slides:', slidesError)

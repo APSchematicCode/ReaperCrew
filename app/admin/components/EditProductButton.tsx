@@ -12,6 +12,7 @@ interface EditProductButtonProps {
     product_type: 'merch' | 'service'
     is_pre_order: boolean
     estimated_ship_date?: string
+    images_json?: string[] // <-- ADD THIS (optional)
   }
 }
 

@@ -10,12 +10,15 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-black/90 backdrop-blur-sm border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="text-3xl font-unifraktur tracking-wider text-white hover:text-gray-300 transition">
+          {/* Logo – using CSS variable directly */}
+          <Link 
+            href="/" 
+            style={{ fontFamily: '"Pirata One", cursive' }}
+            className="text-3xl tracking-wider text-white hover:text-gray-300 transition"
+          >
             Reaper Crew
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
             <Link href="/shop" className="text-gray-300 hover:text-white transition">Shop</Link>
             <Link href="/about" className="text-gray-300 hover:text-white transition">About</Link>
@@ -23,7 +26,6 @@ export default function Header() {
             <Link href="/cart" className="text-gray-300 hover:text-white transition">Cart (0)</Link>
           </nav>
 
-          {/* Mobile Hamburger Button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="md:hidden text-white focus:outline-none"
@@ -39,12 +41,6 @@ export default function Header() {
           </button>
         </div>
 
-        {/* 
-          ✅ FIXED: Mobile menu now slides in BELOW the header.
-          - top-16 (header height) so it doesn't cover the logo or hamburger icon.
-          - h-[calc(100vh-4rem)] to fill the remaining screen height.
-          - bg-black is fully opaque, so the text is perfectly legible.
-        */}
         <div
           className={`fixed top-16 right-0 h-[calc(100vh-4rem)] w-64 bg-black/50 backdrop-blur-sm border-l border-gray-700 transform transition-transform duration-300 ease-in-out ${
             isMenuOpen ? 'translate-x-0' : 'translate-x-full'

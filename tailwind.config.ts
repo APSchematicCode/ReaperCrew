@@ -9,11 +9,10 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        unifraktur: ['var(--font-unifraktur)'],
+        pirata: ['"Pirata One"', 'cursive'],
       },
     },
   },
   plugins: [],
 }
-
 export default config

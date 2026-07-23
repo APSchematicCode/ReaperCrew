@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { UnifrakturMaguntia } from 'next/font/google'
+import { Pirata_One } from 'next/font/google'
 
-const unifrakturMaguntia = UnifrakturMaguntia({
-  weight: '400',
-  subsets: ['latin'],
-  variable: '--font-unifraktur',
+const pirataOne = Pirata_One({ 
+  weight: '400', 
+  subsets: ['latin'], 
+  variable: '--font-unifraktur' 
 })
 
 const geistSans = Geist({
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${unifrakturMaguntia.variable} dark`}>
+    <html lang="en" className={`${pirataOne.variable} dark`}>
       <body className="bg-black text-white antialiased">
         {children}
       </body>

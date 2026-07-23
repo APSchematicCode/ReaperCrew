@@ -15,13 +15,13 @@ export default function Slideshow({ slides }: { slides: Slide[] }) {
   const [emblaRef] = useEmblaCarousel(
     { 
       loop: true,
-      duration: 30, // smooth transition speed
+      duration: 30,
     },
     [
       Autoplay({
-        delay: 5000, // 10 seconds between slides
-        stopOnInteraction: true, // pause when user interacts (click/drag)
-        stopOnMouseEnter: true, // pause when mouse hovers over the slideshow
+        delay: 10000,
+        stopOnInteraction: true,
+        stopOnMouseEnter: true,
       })
     ]
   )
@@ -31,7 +31,7 @@ export default function Slideshow({ slides }: { slides: Slide[] }) {
   }
 
   return (
-    <div className="overflow-hidden" ref={emblaRef}>
+    <div className="overflow-hidden bg-black" ref={emblaRef}>
       <div className="flex">
         {slides.map((slide) => (
           <div key={slide.id} className="flex-[0_0_100%] min-w-0 relative h-64 sm:h-96 md:h-125">
@@ -41,7 +41,8 @@ export default function Slideshow({ slides }: { slides: Slide[] }) {
                   src={slide.image_url}
                   alt="Slide"
                   fill
-                  className="object-cover"
+                  // ✅ FIX: Changed from object-cover to object-contain
+                  className="object-contain"
                   priority
                 />
               </a>
@@ -50,7 +51,8 @@ export default function Slideshow({ slides }: { slides: Slide[] }) {
                 src={slide.image_url}
                 alt="Slide"
                 fill
-                className="object-cover"
+                // ✅ FIX: Changed from object-cover to object-contain
+                className="object-contain"
                 priority
               />
             )}

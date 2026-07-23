@@ -13,7 +13,7 @@ export default function Header() {
           {/* Logo – using CSS variable directly */}
           <Link 
             href="/" 
-            style={{ fontFamily: '"Pirata One", cursive' }}
+            style={{ fontFamily: '"UnifrakturMaguntia", cursive' }}
             className="text-3xl tracking-wider text-white hover:text-gray-300 transition"
           >
             Reaper Crew

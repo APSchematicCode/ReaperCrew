@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        pirata: ['"Pirata One"', 'cursive'],
+        unifraktur: ['"UnifrakturMaguntia"', 'cursive'],
       },
     },
   },

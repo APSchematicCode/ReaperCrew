@@ -4,6 +4,10 @@ import { useCart } from '@/context/CartContext'
 import Image from 'next/image'
 import Link from 'next/link'
 
+// ✅ Shipping fee stored as a constant (editable via .env later)
+const SHIPPING_FEE_DOLLARS = 14.99;
+const SHIPPING_FEE_CENTS = Math.round(SHIPPING_FEE_DOLLARS * 100);
+
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart, totalPrice } = useCart()
 
@@ -19,16 +23,31 @@ export default function CartPage() {
     )
   }
 
+  // Calculate totals (all values are in cents)
+  const subtotal = totalPrice;
+  const shipping = SHIPPING_FEE_CENTS;
+  const total = subtotal + shipping;
+
   return (
     <main className="min-h-screen bg-black py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
+        {/* ✅ "Go Back" Button */}
+        <div className="mb-6">
+          <Link href="/shop" className="text-gray-400 hover:text-white transition inline-flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Continue Shopping
+          </Link>
+        </div>
+
         <h1 className="text-3xl font-unifraktur text-white mb-8">Shopping Cart</h1>
 
         <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
           <ul className="divide-y divide-gray-800">
             {items.map((item) => (
               <li key={`${item.id}-${item.variant}`} className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="relative w-20 h-20 shrink-0 bg-gray-800 rounded overflow-hidden">
+                <div className="relative w-20 h-20 flex-shrink-0 bg-gray-800 rounded overflow-hidden">
                   <Image src={item.image} alt={item.name} fill className="object-contain" sizes="80px" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -63,15 +82,25 @@ export default function CartPage() {
         </div>
 
         <div className="mt-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <p className="text-gray-400">Total</p>
-            <p className="text-3xl font-bold text-white">${(totalPrice / 100).toFixed(2)}</p>
+          <div className="w-full sm:w-auto space-y-1">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Subtotal</span>
+              <span className="text-white">${(subtotal / 100).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-400">Shipping (Flat Rate)</span>
+              <span className="text-white">${(shipping / 100).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-lg font-bold border-t border-gray-800 pt-2">
+              <span className="text-white">Total</span>
+              <span className="text-white">${(total / 100).toFixed(2)}</span>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <button onClick={clearCart} className="text-red-400 hover:text-red-300 text-sm px-4 py-2 border border-red-800 rounded hover:bg-red-900/20 transition">
+          <div className="flex flex-wrap gap-3 w-full sm:w-auto">
+            <button onClick={clearCart} className="text-red-400 hover:text-red-300 text-sm px-4 py-2 border border-red-800 rounded hover:bg-red-900/20 transition flex-1 sm:flex-none">
               Clear Cart
             </button>
-            <button className="bg-white text-black px-6 py-3 rounded font-medium hover:bg-gray-200 transition">
+            <button className="bg-white text-black px-6 py-3 rounded font-medium hover:bg-gray-200 transition flex-1 sm:flex-none">
               Proceed to Checkout
             </button>
           </div>

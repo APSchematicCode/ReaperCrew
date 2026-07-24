@@ -12,10 +12,12 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-black/90 backdrop-blur-sm border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
+          {/* Logo */}
           <Link href="/" className="text-3xl font-unifraktur tracking-wider text-white hover:text-gray-300 transition">
             Reaper Crew
           </Link>
 
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
             <Link href="/shop" className="text-gray-300 hover:text-white transition">Shop</Link>
             <Link href="/about" className="text-gray-300 hover:text-white transition">About</Link>
@@ -30,19 +32,28 @@ export default function Header() {
             </Link>
           </nav>
 
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden text-white focus:outline-none"
-            aria-label="Toggle menu"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {isMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
-          </button>
+          {/* Mobile: Hamburger + Badge */}
+          <div className="md:hidden flex items-center gap-2 relative">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="text-white focus:outline-none"
+              aria-label="Toggle menu"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {isMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+            {/* ✅ Mobile Badge (shows on the hamburger icon) */}
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {totalItems}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Mobile Drawer */}
@@ -51,6 +62,7 @@ export default function Header() {
             isMenuOpen ? 'translate-x-0' : 'translate-x-full'
           } md:hidden`}
         >
+          {/* Links */}
           <div className="flex flex-col items-start p-6 space-y-4 flex-1">
             <Link href="/shop" className="text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Shop</Link>
             <Link href="/about" className="text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>About</Link>
@@ -63,12 +75,12 @@ export default function Header() {
                 </span>
               )}
             </Link>
+          </div>
 
-            {/* Spacer to push socials to bottom */}
-            <div className="flex-1"></div>
-
-            {/* Socials pinned to bottom */}
-            <div className="flex gap-4 pt-4 border-t border-gray-700 w-full">
+          {/* ✅ Socials pinned to bottom with proper padding (not flush to edge) */}
+          <div className="p-6 pt-4 border-t border-gray-700 mt-auto">
+            <p className="text-gray-500 text-xs mb-3">Follow Us</p>
+            <div className="flex gap-4">
               <a href="#" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
               </a>

@@ -32,7 +32,7 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* Mobile: Hamburger + Badge (hidden when menu is open) */}
+          {/* Mobile: Hamburger + Badge */}
           <div className="md:hidden flex items-center gap-2 relative">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -55,18 +55,18 @@ export default function Header() {
           </div>
         </div>
 
-        {/* ✅ Mobile Drawer - Refactored to guarantee socials appear */}
+        {/* ✅ Mobile Drawer - Using justify-between to force socials to the bottom */}
         <div
-          className={`fixed top-16 right-0 h-[calc(100vh-4rem)] w-64 bg-black/50 backdrop-blur-sm border-l border-gray-700 transform transition-transform duration-300 ease-in-out md:hidden ${
+          className={`fixed top-16 right-0 h-[calc(100vh-4rem)] w-64 bg-black/50 backdrop-blur-sm border-l border-gray-700 transform transition-transform duration-300 ease-in-out md:hidden flex flex-col justify-between ${
             isMenuOpen ? 'translate-x-0' : 'translate-x-full'
-          } flex flex-col`}
+          }`}
         >
-          {/* Links section - takes available space */}
-          <div className="flex-1 flex flex-col p-6 space-y-4 overflow-y-auto">
-            <Link href="/shop" className="text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Shop</Link>
-            <Link href="/about" className="text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>About</Link>
-            <Link href="/contact" className="text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Contact</Link>
-            <Link href="/cart" className="text-xl text-gray-300 hover:text-white transition flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+          {/* Top: Navigation Links */}
+          <div className="p-6 space-y-4">
+            <Link href="/shop" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Shop</Link>
+            <Link href="/about" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>About</Link>
+            <Link href="/contact" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Contact</Link>
+            <Link href="/cart" className="block text-xl text-gray-300 hover:text-white transition items-center gap-2" onClick={() => setIsMenuOpen(false)}>
               Cart
               {totalItems > 0 && (
                 <span className="bg-white text-black text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
@@ -76,8 +76,8 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* ✅ Socials - Pinned to the bottom with border-top */}
-          <div className="p-6 pt-4 border-t border-gray-700 shrink-0 bg-black/10 backdrop-blur-sm">
+          {/* Bottom: Socials (Forced down by justify-between) */}
+          <div className="p-6 pt-4 border-t border-gray-700">
             <p className="text-gray-400 text-xs uppercase tracking-wider mb-3">Connect with us</p>
             <div className="flex gap-5">
               <a href="#" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition">

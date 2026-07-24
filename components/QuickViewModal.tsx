@@ -32,7 +32,9 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   const variantKeys = product?.variants_json ? Object.keys(product.variants_json) : []
   const isService = product?.product_type === 'service'
   const variantExtra = product?.variants_json?.[selectedVariant] || 0
-  const displayPrice = isService && product ? product.price + variantExtra : product?.price || 0
+
+  // ✅ DISPLAY PRICE: Always shows the BASE price only (never changes)
+  const displayPrice = product?.price || 0
 
   useEffect(() => {
     if (product && variantKeys.length > 0) {
@@ -60,7 +62,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     const mainImage = product.images_json?.[0] || ''
     let finalPrice = product.price
     if (isService && variantExtra > 0) {
-      finalPrice = product.price + variantExtra
+      finalPrice = product.price + variantExtra // Cart gets the total price
     }
     addItem({
       id: product.id,
@@ -145,7 +147,6 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                 >
                   {variantKeys.map((key) => {
                     const extra = product.variants_json[key] || 0
-                    const total = isService ? product.price + extra : product.price
                     return (
                       <option key={key} value={key}>
                         {key} {isService ? `(+$${(extra / 100).toFixed(2)})` : `(${extra} in stock)`}

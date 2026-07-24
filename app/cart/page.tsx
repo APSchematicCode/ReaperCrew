@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 const SHIPPING_FEE_DOLLARS = 14.99
-const SHIPPING_TIME = "7-14 business days"
+const SHIPPING_TIME = "2-3 business days"
 const SHIPPING_FEE_CENTS = Math.round(SHIPPING_FEE_DOLLARS * 100)
 
 export default function CartPage() {
@@ -50,7 +50,9 @@ export default function CartPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-white font-semibold">{item.name}</h3>
-                  <p className="text-gray-400 text-sm">Variant: {item.variant}</p>
+                  {/* ✅ Displays the selected package/variant clearly */}
+                  <p className="text-gray-400 text-sm">Package: <span className="text-gray-300">{item.variant}</span></p>
+                  {/* ✅ Displays the TOTAL price (base + extra) */}
                   <p className="text-white font-bold">${(item.price / 100).toFixed(2)}</p>
                 </div>
                 <div className="flex items-center gap-3 mt-2 sm:mt-0">
@@ -89,7 +91,6 @@ export default function CartPage() {
               <span className="text-gray-400">Shipping (Flat Rate)</span>
               <span className="text-white">${(shipping / 100).toFixed(2)}</span>
             </div>
-            {/* ✅ Fixed colon and spacing */}
             <div className="flex justify-between text-xs text-gray-500">
               <span>Estimated Delivery:</span>
               <span>{SHIPPING_TIME}</span>

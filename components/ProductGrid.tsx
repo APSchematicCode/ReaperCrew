@@ -31,6 +31,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
     const isService = product.product_type === 'service'
     const variantExtra = product.variants_json?.[variantKey] || 0
 
+    // ✅ Total price (base + extra) is calculated here for the cart
     if (isService && variantExtra > 0) {
       finalPrice = product.price + variantExtra
     }
@@ -38,7 +39,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
     addItem({
       id: product.id,
       name: product.name,
-      price: finalPrice,
+      price: finalPrice, // Cart gets the total price
       image: mainImage,
       variant: variantKey || 'Default',
       quantity: quantity,
@@ -56,7 +57,9 @@ export default function ProductGrid({ products }: { products: Product[] }) {
           const [quantity, setQuantity] = useState<number>(1)
           const isService = product.product_type === 'service'
           const variantExtra = product.variants_json?.[selectedVariant] || 0
-          const displayPrice = isService ? product.price + variantExtra : product.price
+
+          // ✅ DISPLAY PRICE: Always shows the BASE price only (never changes)
+          const displayPrice = product.price
 
           return (
             <div key={product.id} className="bg-gray-900 rounded-lg overflow-hidden border border-gray-800 hover:border-gray-600 transition group flex flex-col">
@@ -99,6 +102,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                 <p className="text-gray-400 text-sm mt-1 line-clamp-2 flex-1">{product.description}</p>
 
                 <div className="mt-3 flex items-center justify-between">
+                  {/* ✅ Static Base Price Display */}
                   <span className="text-lg font-bold text-white">${(displayPrice / 100).toFixed(2)}</span>
                   {product.is_pre_order && (
                     <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full uppercase font-semibold">Pre-Order</span>
@@ -121,7 +125,6 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                     >
                       {variantKeys.map((key) => {
                         const extra = product.variants_json[key] || 0
-                        const total = isService ? product.price + extra : product.price
                         return (
                           <option key={key} value={key}>
                             {key} {isService ? `(+$${(extra / 100).toFixed(2)})` : `(${extra} in stock)`}

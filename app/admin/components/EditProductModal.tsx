@@ -17,6 +17,7 @@ interface EditProductModalProps {
     estimated_ship_date?: string
     images_json?: string[]
     variants_json?: any
+    popularity?: number
   } | null
 }
 
@@ -30,6 +31,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
   const [existingImages, setExistingImages] = useState<string[]>([])
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [variants, setVariants] = useState<{ key: string; value: number }[]>([])
+  const [popularity, setPopularity] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -42,8 +44,8 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
       setIsPreOrder(product.is_pre_order || false)
       setEstimatedShipDate(product.estimated_ship_date || '')
       setExistingImages(product.images_json || [])
+      setPopularity(product.popularity || 0)
 
-      // Load variants
       if (product.variants_json) {
         const entries = Object.entries(product.variants_json)
         setVariants(entries.map(([key, value]) => ({ key, value: value as number })))
@@ -102,7 +104,6 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
       return
     }
 
-    // Build variants JSON
     const variantsJson = variants.reduce((acc, v) => {
       if (v.key) acc[v.key] = v.value
       return acc
@@ -131,6 +132,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
         estimated_ship_date: isPreOrder ? estimatedShipDate : null,
         images_json: allImages,
         variants_json: variantsJson,
+        popularity: popularity, // ✅ Added
       })
       .eq('id', product.id)
 
@@ -175,14 +177,25 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
             </select>
           </div>
 
-          {/* ✅ NEW: Variant Manager */}
+          {/* ✅ Popularity Field */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Variants (Size / Stock)</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Popularity (Higher = shown first on home)</label>
+            <input
+              type="number"
+              value={popularity}
+              onChange={(e) => setPopularity(parseInt(e.target.value) || 0)}
+              className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
+              placeholder="e.g., 100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Variants</label>
             {variants.map((variant, index) => (
               <div key={index} className="flex gap-2 mb-2 items-center">
                 <input
                   type="text"
-                  placeholder="Size (e.g. M)"
+                  placeholder={productType === 'service' ? 'Package (e.g. Basic)' : 'Size (e.g. M)'}
                   value={variant.key}
                   onChange={(e) => updateVariantKey(index, e.target.value)}
                   className="w-1/2 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
@@ -236,7 +249,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
           {isPreOrder && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Estimated Ship Date</label>
-              <input type="text" value={estimatedShipDate} onChange={(e) => setEstimatedShipDate(e.target.value)} placeholder="e.g. Ships in 4-6 weeks" className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
+              <input type="text" value={estimatedShipDate} onChange={(e) => setEstimatedShipDate(e.target.value)} placeholder="e.g. Will start shipping in 4-6 weeks" className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
             </div>
           )}
 

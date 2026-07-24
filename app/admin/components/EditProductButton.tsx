@@ -1,12 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import Image from 'next/image'
+import { useState } from 'react'
+import EditProductModal from './EditProductModal'
 
-interface EditProductModalProps {
-  isOpen: boolean
-  onClose: () => void
+interface EditProductButtonProps {
   product: {
     id: string
     name: string
@@ -15,250 +12,26 @@ interface EditProductModalProps {
     product_type: 'merch' | 'service'
     is_pre_order: boolean
     estimated_ship_date?: string
-    images_json?: string[]
-    variants_json?: any
-    popularity?: number
-  } | null
+    images_json?: string[] // <-- ADD THIS (optional)
+  }
 }
 
-export default function EditProductModal({ isOpen, onClose, product }: EditProductModalProps) {
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [price, setPrice] = useState('')
-  const [productType, setProductType] = useState('merch')
-  const [isPreOrder, setIsPreOrder] = useState(false)
-  const [estimatedShipDate, setEstimatedShipDate] = useState('')
-  const [existingImages, setExistingImages] = useState<string[]>([])
-  const [newFiles, setNewFiles] = useState<File[]>([])
-  const [variants, setVariants] = useState<{ key: string; value: number }[]>([])
-  const [popularity, setPopularity] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    if (product) {
-      setName(product.name || '')
-      setDescription(product.description || '')
-      setPrice((product.price / 100).toFixed(2))
-      setProductType(product.product_type || 'merch')
-      setIsPreOrder(product.is_pre_order || false)
-      setEstimatedShipDate(product.estimated_ship_date || '')
-      setExistingImages(product.images_json || [])
-      setPopularity(product.popularity || 0)
-
-      if (product.variants_json) {
-        const entries = Object.entries(product.variants_json)
-        setVariants(entries.map(([key, value]) => ({ key, value: value as number })))
-      } else {
-        setVariants([])
-      }
-    }
-  }, [product])
-
-  if (!isOpen || !product) return null
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) setNewFiles(Array.from(e.target.files))
-  }
-
-  const removeExistingImage = (urlToRemove: string) => {
-    setExistingImages(existingImages.filter(url => url !== urlToRemove))
-  }
-
-  const addVariant = () => setVariants([...variants, { key: '', value: 0 }])
-  const removeVariant = (index: number) => setVariants(variants.filter((_, i) => i !== index))
-  const updateVariantKey = (index: number, key: string) => {
-    const newVariants = [...variants]
-    newVariants[index].key = key
-    setVariants(newVariants)
-  }
-  const updateVariantValue = (index: number, value: number) => {
-    const newVariants = [...variants]
-    newVariants[index].value = value
-    setVariants(newVariants)
-  }
-
-  const uploadNewImages = async (): Promise<string[]> => {
-    const uploadedUrls: string[] = []
-    for (const file of newFiles) {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`
-      const filePath = `products/${fileName}`
-      const { error: uploadError } = await supabase.storage.from('products').upload(filePath, file)
-      if (uploadError) throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`)
-      const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(filePath)
-      uploadedUrls.push(publicUrl)
-    }
-    return uploadedUrls
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-
-    const priceInCents = Math.round(parseFloat(price) * 100)
-    if (isNaN(priceInCents) || priceInCents <= 0) {
-      setError('Please enter a valid price.')
-      setLoading(false)
-      return
-    }
-
-    const variantsJson = variants.reduce((acc, v) => {
-      if (v.key) acc[v.key] = v.value
-      return acc
-    }, {} as Record<string, number>)
-
-    let allImages = [...existingImages]
-    if (newFiles.length > 0) {
-      try {
-        const uploadedUrls = await uploadNewImages()
-        allImages = [...allImages, ...uploadedUrls]
-      } catch (err: any) {
-        setError(err.message)
-        setLoading(false)
-        return
-      }
-    }
-
-    const { error: updateError } = await supabase
-      .from('products')
-      .update({
-        name,
-        description,
-        price: priceInCents,
-        product_type: productType,
-        is_pre_order: isPreOrder,
-        estimated_ship_date: isPreOrder ? estimatedShipDate : null,
-        images_json: allImages,
-        variants_json: variantsJson,
-        popularity: popularity, // ✅ Added
-      })
-      .eq('id', product.id)
-
-    if (updateError) {
-      setError(updateError.message)
-      setLoading(false)
-      return
-    }
-
-    setLoading(false)
-    onClose()
-    window.location.reload()
-  }
+export default function EditProductButton({ product }: EditProductButtonProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-unifraktur text-white mb-4">Edit Product</h2>
-        {error && <div className="bg-red-900/50 border border-red-800 text-red-200 px-4 py-2 rounded mb-4 text-sm">{error}</div>}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Product Name *</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Price (USD) *</label>
-            <input type="number" step="0.01" min="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Product Type</label>
-            <select value={productType} onChange={(e) => setProductType(e.target.value)} className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500">
-              <option value="merch">Merch (Physical)</option>
-              <option value="service">Service (Media Package)</option>
-            </select>
-          </div>
-
-          {/* ✅ Popularity Field */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Popularity (Higher = shown first on home)</label>
-            <input
-              type="number"
-              value={popularity}
-              onChange={(e) => setPopularity(parseInt(e.target.value) || 0)}
-              className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
-              placeholder="e.g., 100"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Variants</label>
-            {variants.map((variant, index) => (
-              <div key={index} className="flex gap-2 mb-2 items-center">
-                <input
-                  type="text"
-                  placeholder={productType === 'service' ? 'Package (e.g. Basic)' : 'Size (e.g. M)'}
-                  value={variant.key}
-                  onChange={(e) => updateVariantKey(index, e.target.value)}
-                  className="w-1/2 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
-                />
-                <input
-                  type="number"
-                  placeholder="Stock"
-                  value={variant.value}
-                  onChange={(e) => updateVariantValue(index, parseInt(e.target.value) || 0)}
-                  className="w-1/3 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
-                />
-                <button type="button" onClick={() => removeVariant(index)} className="text-red-400 hover:text-red-300 text-sm">✕</button>
-              </div>
-            ))}
-            <button type="button" onClick={addVariant} className="text-sm text-blue-400 hover:text-blue-300">+ Add Variant</button>
-          </div>
-
-          {existingImages.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Current Images</label>
-              <div className="flex flex-wrap gap-2">
-                {existingImages.map((url, idx) => (
-                  <div key={idx} className="relative w-16 h-16 bg-gray-800 rounded border border-gray-700 group">
-                    <Image src={url} alt={`Product ${idx + 1}`} fill className="object-cover rounded" />
-                    <button type="button" onClick={() => removeExistingImage(url)} className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-700">×</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Add New Images</label>
-            <input type="file" accept="image/*" multiple onChange={handleFileChange} className="w-full text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700" />
-            {newFiles.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {newFiles.map((file, idx) => (
-                  <div key={idx} className="relative w-16 h-16 bg-gray-800 rounded border border-gray-700 overflow-hidden">
-                    <Image src={URL.createObjectURL(file)} alt={`Preview ${idx + 1}`} fill className="object-cover" />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input type="checkbox" id="isPreOrder" checked={isPreOrder} onChange={(e) => setIsPreOrder(e.target.checked)} className="w-4 h-4" />
-            <label htmlFor="isPreOrder" className="text-sm text-gray-300">This is a Pre-Order item</label>
-          </div>
-
-          {isPreOrder && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Estimated Ship Date</label>
-              <input type="text" value={estimatedShipDate} onChange={(e) => setEstimatedShipDate(e.target.value)} placeholder="e.g. Will start shipping in 4-6 weeks" className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-gray-300 py-2 rounded hover:bg-gray-700 transition">Cancel</button>
-            <button type="submit" disabled={loading} className="flex-1 bg-blue-600 text-white py-2 rounded font-medium hover:bg-blue-700 transition disabled:opacity-50">{loading ? 'Saving...' : 'Save Changes'}</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <>
+      <button
+        onClick={() => setIsModalOpen(true)}
+        className="text-blue-400 hover:text-blue-300 text-sm mr-3"
+      >
+        Edit
+      </button>
+      <EditProductModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        product={product}
+      />
+    </>
   )
 }

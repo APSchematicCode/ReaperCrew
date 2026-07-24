@@ -19,6 +19,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
   const [estimatedShipDate, setEstimatedShipDate] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [variants, setVariants] = useState<{ key: string; value: number }[]>([])
+  const [popularity, setPopularity] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [uploadProgress, setUploadProgress] = useState('')
@@ -71,7 +72,6 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
       return
     }
 
-    // Build variants JSON
     const variantsJson = variants.reduce((acc, v) => {
       if (v.key) acc[v.key] = v.value
       return acc
@@ -99,6 +99,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
       estimated_ship_date: isPreOrder ? estimatedShipDate : null,
       images_json: imageUrls,
       variants_json: variantsJson,
+      popularity: popularity, // ✅ Added
     })
 
     if (insertError) {
@@ -110,7 +111,6 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
     setLoading(false)
     onProductAdded()
     onClose()
-    // Reset
     setName('')
     setDescription('')
     setPrice('')
@@ -119,6 +119,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
     setEstimatedShipDate('')
     setFiles([])
     setVariants([])
+    setPopularity(0)
   }
 
   return (
@@ -152,14 +153,25 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
             </select>
           </div>
 
-          {/* ✅ NEW: Variant Manager */}
+          {/* ✅ Popularity Field */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Variants (Size / Stock)</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Popularity (Higher = shown first on home)</label>
+            <input
+              type="number"
+              value={popularity}
+              onChange={(e) => setPopularity(parseInt(e.target.value) || 0)}
+              className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
+              placeholder="e.g., 100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Variants</label>
             {variants.map((variant, index) => (
               <div key={index} className="flex gap-2 mb-2 items-center">
                 <input
                   type="text"
-                  placeholder="Size (e.g. M)"
+                  placeholder={productType === 'service' ? 'Package (e.g. Basic)' : 'Size (e.g. M)'}
                   value={variant.key}
                   onChange={(e) => updateVariantKey(index, e.target.value)}
                   className="w-1/2 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
@@ -200,7 +212,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
           {isPreOrder && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Estimated Ship Date</label>
-              <input type="text" value={estimatedShipDate} onChange={(e) => setEstimatedShipDate(e.target.value)} placeholder="e.g. Ships in 4-6 weeks" className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
+              <input type="text" value={estimatedShipDate} onChange={(e) => setEstimatedShipDate(e.target.value)} placeholder="e.g. Will start shipping in 4-6 weeks" className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
             </div>
           )}
 

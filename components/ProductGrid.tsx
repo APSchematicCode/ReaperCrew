@@ -46,6 +46,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
           const variantKeys = product.variants_json ? Object.keys(product.variants_json) : []
           const [selectedVariant, setSelectedVariant] = useState<string>(variantKeys[0] || '')
           const [quantity, setQuantity] = useState<number>(1)
+          const isService = product.product_type === 'service'
 
           return (
             <div key={product.id} className="bg-gray-900 rounded-lg overflow-hidden border border-gray-800 hover:border-gray-600 transition group flex flex-col">
@@ -90,23 +91,17 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-lg font-bold text-white">${(product.price / 100).toFixed(2)}</span>
                   {product.is_pre_order && (
-                    <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full uppercase font-semibold">
-                      Pre-Order
-                    </span>
+                    <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full uppercase font-semibold">Pre-Order</span>
                   )}
-                  {product.product_type === 'service' && (
-                    <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded-full uppercase font-semibold">
-                      Custom
-                    </span>
+                  {isService && (
+                    <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded-full uppercase font-semibold">Custom</span>
                   )}
                 </div>
 
-                {/* ✅ Updated Pre-Order Text */}
                 {product.is_pre_order && product.estimated_ship_date && (
                   <p className="text-xs text-gray-400 mt-2">Will start shipping {product.estimated_ship_date}</p>
                 )}
 
-                {/* Variant Dropdown */}
                 {variantKeys.length > 0 && (
                   <div className="mt-3">
                     <select
@@ -116,14 +111,16 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                     >
                       {variantKeys.map((key) => (
                         <option key={key} value={key}>
-                          {key} ({product.variants_json[key]} in stock)
+                          {key} ({product.variants_json[key]} {isService ? 'available' : 'in stock'})
                         </option>
                       ))}
                     </select>
+                    <p className="text-gray-500 text-xs mt-1">
+                      {isService ? 'Select a package option' : 'Select a size'}
+                    </p>
                   </div>
                 )}
 
-                {/* ✅ Quantity Selector */}
                 <div className="mt-3 flex items-center gap-3">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}

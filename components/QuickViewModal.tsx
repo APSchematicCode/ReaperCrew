@@ -30,12 +30,13 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   const [quantity, setQuantity] = useState<number>(1)
 
   const variantKeys = product?.variants_json ? Object.keys(product.variants_json) : []
+  const isService = product?.product_type === 'service'
 
   useEffect(() => {
     if (product && variantKeys.length > 0) {
       setSelectedVariant(variantKeys[0])
     }
-    setQuantity(1) // Reset quantity when modal opens
+    setQuantity(1)
   }, [product])
 
   useEffect(() => {
@@ -110,7 +111,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             <p className="text-3xl font-bold text-white mb-2">${(product.price / 100).toFixed(2)}</p>
             
             <div className="flex flex-wrap gap-2 mb-4">
-              {product.product_type === 'service' && (
+              {isService && (
                 <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded-full uppercase font-semibold">Custom</span>
               )}
               {product.is_pre_order && (
@@ -118,7 +119,6 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
               )}
             </div>
 
-            {/* ✅ Updated Pre-Order Text */}
             {product.is_pre_order && product.estimated_ship_date && (
               <p className="text-sm text-gray-400 mb-3">Will start shipping {product.estimated_ship_date}</p>
             )}
@@ -127,10 +127,11 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
               {product.description || 'No description provided.'}
             </p>
 
-            {/* Variant Dropdown */}
             {variantKeys.length > 0 && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-1">Select Option</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  {isService ? 'Select Package' : 'Select Size'}
+                </label>
                 <select
                   value={selectedVariant}
                   onChange={(e) => setSelectedVariant(e.target.value)}
@@ -138,14 +139,16 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                 >
                   {variantKeys.map((key) => (
                     <option key={key} value={key}>
-                      {key} ({product.variants_json[key]} in stock)
+                      {key} ({product.variants_json[key]} {isService ? 'available' : 'in stock'})
                     </option>
                   ))}
                 </select>
+                <p className="text-gray-500 text-xs mt-1">
+                  {isService ? 'Choose a package that fits your needs' : 'Choose your size'}
+                </p>
               </div>
             )}
 
-            {/* ✅ Quantity Selector */}
             <div className="flex items-center gap-3 mb-4">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}

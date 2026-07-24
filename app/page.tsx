@@ -4,13 +4,13 @@ import ProductGrid from '@/components/ProductGrid'
 import Slideshow from '@/components/Slideshow'
 
 export default async function Home() {
-  // ✅ Fetch only the top 3 products (ordered by display_order)
+  // ✅ Top 3 products by popularity (highest first)
   const { data: products, error: productsError } = await supabase
     .from('products')
     .select('*')
+    .order('popularity', { ascending: false })
     .order('display_order', { ascending: true })
-    .order('created_at', { ascending: false })
-    .limit(3) // 👈 This limits it to 3
+    .limit(3)
 
   const { data: slides, error: slidesError } = await supabase
     .from('slides')

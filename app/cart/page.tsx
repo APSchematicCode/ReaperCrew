@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 const SHIPPING_FEE_DOLLARS = 14.99
-const SHIPPING_TIME = "2-3 business days"
+const SHIPPING_TIME = "7-14 business days"
 const SHIPPING_FEE_CENTS = Math.round(SHIPPING_FEE_DOLLARS * 100)
 
 export default function CartPage() {
@@ -45,7 +45,7 @@ export default function CartPage() {
           <ul className="divide-y divide-gray-800">
             {items.map((item) => (
               <li key={`${item.id}-${item.variant}`} className="p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="relative w-20 h-20 flex-shrink-0 bg-gray-800 rounded overflow-hidden">
+                <div className="relative w-20 h-20 shrink-0 bg-gray-800 rounded overflow-hidden">
                   <Image src={item.image} alt={item.name} fill className="object-contain" sizes="80px" />
                 </div>
                 <div className="flex-1 min-w-0">

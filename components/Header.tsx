@@ -32,7 +32,7 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* Mobile: Hamburger + Badge */}
+          {/* Mobile: Hamburger + Badge (hidden when menu is open) */}
           <div className="md:hidden flex items-center gap-2 relative">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -47,8 +47,8 @@ export default function Header() {
                 )}
               </svg>
             </button>
-            {/* ✅ Mobile Badge (shows on the hamburger icon) */}
-            {totalItems > 0 && (
+            {/* ✅ Only show badge if menu is closed */}
+            {totalItems > 0 && !isMenuOpen && (
               <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
                 {totalItems}
               </span>
@@ -77,7 +77,7 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* ✅ Socials pinned to bottom with proper padding (not flush to edge) */}
+          {/* ✅ Socials pinned to bottom */}
           <div className="p-6 pt-4 border-t border-gray-700 mt-auto">
             <p className="text-gray-500 text-xs mb-3">Follow Us</p>
             <div className="flex gap-4">

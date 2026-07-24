@@ -27,6 +27,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   const [emblaRef] = useEmblaCarousel({ loop: true })
   const { addItem } = useCart()
   const [selectedVariant, setSelectedVariant] = useState<string>('')
+  const [quantity, setQuantity] = useState<number>(1)
 
   const variantKeys = product?.variants_json ? Object.keys(product.variants_json) : []
 
@@ -34,6 +35,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     if (product && variantKeys.length > 0) {
       setSelectedVariant(variantKeys[0])
     }
+    setQuantity(1) // Reset quantity when modal opens
   }, [product])
 
   useEffect(() => {
@@ -59,6 +61,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
       price: product.price,
       image: mainImage,
       variant: selectedVariant || 'Default',
+      quantity: quantity,
     })
     onClose()
   }
@@ -115,15 +118,16 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
               )}
             </div>
 
+            {/* ✅ Updated Pre-Order Text */}
             {product.is_pre_order && product.estimated_ship_date && (
-              <p className="text-sm text-gray-400 mb-3">Ships: {product.estimated_ship_date}</p>
+              <p className="text-sm text-gray-400 mb-3">Will start shipping {product.estimated_ship_date}</p>
             )}
 
             <p className="text-gray-300 text-sm leading-relaxed mb-4 grow">
               {product.description || 'No description provided.'}
             </p>
 
-            {/* Variant Dropdown in Quick View */}
+            {/* Variant Dropdown */}
             {variantKeys.length > 0 && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-300 mb-1">Select Option</label>
@@ -140,6 +144,23 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                 </select>
               </div>
             )}
+
+            {/* ✅ Quantity Selector */}
+            <div className="flex items-center gap-3 mb-4">
+              <button
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center"
+              >
+                -
+              </button>
+              <span className="text-white w-8 text-center">{quantity}</span>
+              <button
+                onClick={() => setQuantity(quantity + 1)}
+                className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center"
+              >
+                +
+              </button>
+            </div>
 
             <button
               onClick={handleAddToCart}

@@ -31,6 +31,8 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
 
   const variantKeys = product?.variants_json ? Object.keys(product.variants_json) : []
   const isService = product?.product_type === 'service'
+  const variantExtra = product?.variants_json?.[selectedVariant] || 0
+  const displayPrice = isService && product ? product.price + variantExtra : product?.price || 0
 
   useEffect(() => {
     if (product && variantKeys.length > 0) {
@@ -56,10 +58,14 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
 
   const handleAddToCart = () => {
     const mainImage = product.images_json?.[0] || ''
+    let finalPrice = product.price
+    if (isService && variantExtra > 0) {
+      finalPrice = product.price + variantExtra
+    }
     addItem({
       id: product.id,
       name: product.name,
-      price: product.price,
+      price: finalPrice,
       image: mainImage,
       variant: selectedVariant || 'Default',
       quantity: quantity,
@@ -108,8 +114,8 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
 
           <div className="p-6 flex flex-col">
             <h2 className="text-2xl font-unifraktur text-white mb-1">{product.name}</h2>
-            <p className="text-3xl font-bold text-white mb-2">${(product.price / 100).toFixed(2)}</p>
-            
+            <p className="text-3xl font-bold text-white mb-2">${(displayPrice / 100).toFixed(2)}</p>
+
             <div className="flex flex-wrap gap-2 mb-4">
               {isService && (
                 <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded-full uppercase font-semibold">Custom</span>
@@ -137,11 +143,15 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                   onChange={(e) => setSelectedVariant(e.target.value)}
                   className="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
                 >
-                  {variantKeys.map((key) => (
-                    <option key={key} value={key}>
-                      {key} ({product.variants_json[key]} {isService ? 'available' : 'in stock'})
-                    </option>
-                  ))}
+                  {variantKeys.map((key) => {
+                    const extra = product.variants_json[key] || 0
+                    const total = isService ? product.price + extra : product.price
+                    return (
+                      <option key={key} value={key}>
+                        {key} {isService ? `(+$${(extra / 100).toFixed(2)})` : `(${extra} in stock)`}
+                      </option>
+                    )
+                  })}
                 </select>
                 <p className="text-gray-500 text-xs mt-1">
                   {isService ? 'Choose a package that fits your needs' : 'Choose your size'}
@@ -171,7 +181,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             >
               Add to Cart
             </button>
-            
+
             <p className="text-xs text-gray-500 text-center mt-3">
               {images.length} image{images.length !== 1 ? 's' : ''}
             </p>

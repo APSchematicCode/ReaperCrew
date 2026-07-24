@@ -41,7 +41,9 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
   }
   const updateVariantValue = (index: number, value: number) => {
     const newVariants = [...variants]
-    newVariants[index].value = value
+    // If service, store as cents (multiply by 100). If merch, store as stock.
+    const finalValue = productType === 'service' ? Math.round(value * 100) : value
+    newVariants[index].value = finalValue
     setVariants(newVariants)
   }
 
@@ -99,7 +101,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
       estimated_ship_date: isPreOrder ? estimatedShipDate : null,
       images_json: imageUrls,
       variants_json: variantsJson,
-      popularity: popularity, // ✅ Added
+      popularity: popularity,
     })
 
     if (insertError) {
@@ -122,6 +124,8 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
     setPopularity(0)
   }
 
+  const isService = productType === 'service'
+
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
@@ -141,7 +145,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Price (USD) *</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Base Price (USD) *</label>
             <input type="number" step="0.01" min="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" placeholder="49.99" />
           </div>
 
@@ -153,40 +157,41 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
             </select>
           </div>
 
-          {/* ✅ Popularity Field */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Popularity (Higher = shown first on home)</label>
-            <input
-              type="number"
-              value={popularity}
-              onChange={(e) => setPopularity(parseInt(e.target.value) || 0)}
-              className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
-              placeholder="e.g., 100"
-            />
+            <input type="number" value={popularity} onChange={(e) => setPopularity(parseInt(e.target.value) || 0)} className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" placeholder="e.g., 100" />
           </div>
 
+          {/* ✅ Variants with dynamic labels */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Variants</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              {isService ? 'Package Options (Name + Extra Price)' : 'Variants (Size + Stock)'}
+            </label>
             {variants.map((variant, index) => (
               <div key={index} className="flex gap-2 mb-2 items-center">
                 <input
                   type="text"
-                  placeholder={productType === 'service' ? 'Package (e.g. Basic)' : 'Size (e.g. M)'}
+                  placeholder={isService ? 'Package name (e.g. Pro)' : 'Size (e.g. M)'}
                   value={variant.key}
                   onChange={(e) => updateVariantKey(index, e.target.value)}
                   className="w-1/2 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
                 />
                 <input
                   type="number"
-                  placeholder="Stock"
-                  value={variant.value}
-                  onChange={(e) => updateVariantValue(index, parseInt(e.target.value) || 0)}
+                  step={isService ? "0.01" : "1"}
+                  min="0"
+                  placeholder={isService ? 'Extra price (e.g. 20)' : 'Stock'}
+                  value={isService ? (variant.value / 100).toFixed(2) : variant.value}
+                  onChange={(e) => updateVariantValue(index, parseFloat(e.target.value) || 0)}
                   className="w-1/3 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
                 />
                 <button type="button" onClick={() => removeVariant(index)} className="text-red-400 hover:text-red-300 text-sm">✕</button>
               </div>
             ))}
             <button type="button" onClick={addVariant} className="text-sm text-blue-400 hover:text-blue-300">+ Add Variant</button>
+            <p className="text-gray-500 text-xs mt-1">
+              {isService ? 'Extra price will be added to the base price.' : 'Set the stock quantity for each size.'}
+            </p>
           </div>
 
           <div>
@@ -199,7 +204,6 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
                     <Image src={URL.createObjectURL(file)} alt={`Preview ${idx + 1}`} fill className="object-cover" />
                   </div>
                 ))}
-                <p className="w-full text-gray-400 text-xs mt-1">{files.length} image(s) selected.</p>
               </div>
             )}
           </div>

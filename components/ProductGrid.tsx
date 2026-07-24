@@ -25,14 +25,22 @@ export default function ProductGrid({ products }: { products: Product[] }) {
     return <div className="text-gray-400">No products available</div>
   }
 
-  const handleAddToCart = (product: Product, variant: string, quantity: number) => {
+  const handleAddToCart = (product: Product, variantKey: string, quantity: number) => {
     const mainImage = product.images_json?.[0] || ''
+    let finalPrice = product.price
+    const isService = product.product_type === 'service'
+    const variantExtra = product.variants_json?.[variantKey] || 0
+
+    if (isService && variantExtra > 0) {
+      finalPrice = product.price + variantExtra
+    }
+
     addItem({
       id: product.id,
       name: product.name,
-      price: product.price,
+      price: finalPrice,
       image: mainImage,
-      variant: variant || 'Default',
+      variant: variantKey || 'Default',
       quantity: quantity,
     })
   }
@@ -47,6 +55,8 @@ export default function ProductGrid({ products }: { products: Product[] }) {
           const [selectedVariant, setSelectedVariant] = useState<string>(variantKeys[0] || '')
           const [quantity, setQuantity] = useState<number>(1)
           const isService = product.product_type === 'service'
+          const variantExtra = product.variants_json?.[selectedVariant] || 0
+          const displayPrice = isService ? product.price + variantExtra : product.price
 
           return (
             <div key={product.id} className="bg-gray-900 rounded-lg overflow-hidden border border-gray-800 hover:border-gray-600 transition group flex flex-col">
@@ -87,9 +97,9 @@ export default function ProductGrid({ products }: { products: Product[] }) {
               <div className="p-4 flex flex-col flex-1">
                 <h3 className="text-xl font-semibold text-white">{product.name}</h3>
                 <p className="text-gray-400 text-sm mt-1 line-clamp-2 flex-1">{product.description}</p>
-                
+
                 <div className="mt-3 flex items-center justify-between">
-                  <span className="text-lg font-bold text-white">${(product.price / 100).toFixed(2)}</span>
+                  <span className="text-lg font-bold text-white">${(displayPrice / 100).toFixed(2)}</span>
                   {product.is_pre_order && (
                     <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full uppercase font-semibold">Pre-Order</span>
                   )}
@@ -109,11 +119,15 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                       onChange={(e) => setSelectedVariant(e.target.value)}
                       className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
                     >
-                      {variantKeys.map((key) => (
-                        <option key={key} value={key}>
-                          {key} ({product.variants_json[key]} {isService ? 'available' : 'in stock'})
-                        </option>
-                      ))}
+                      {variantKeys.map((key) => {
+                        const extra = product.variants_json[key] || 0
+                        const total = isService ? product.price + extra : product.price
+                        return (
+                          <option key={key} value={key}>
+                            {key} {isService ? `(+$${(extra / 100).toFixed(2)})` : `(${extra} in stock)`}
+                          </option>
+                        )
+                      })}
                     </select>
                     <p className="text-gray-500 text-xs mt-1">
                       {isService ? 'Select a package option' : 'Select a size'}

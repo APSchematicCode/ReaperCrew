@@ -35,6 +35,8 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const isService = productType === 'service'
+
   useEffect(() => {
     if (product) {
       setName(product.name || '')
@@ -74,7 +76,8 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
   }
   const updateVariantValue = (index: number, value: number) => {
     const newVariants = [...variants]
-    newVariants[index].value = value
+    const finalValue = isService ? Math.round(value * 100) : value
+    newVariants[index].value = finalValue
     setVariants(newVariants)
   }
 
@@ -132,7 +135,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
         estimated_ship_date: isPreOrder ? estimatedShipDate : null,
         images_json: allImages,
         variants_json: variantsJson,
-        popularity: popularity, // ✅ Added
+        popularity: popularity,
       })
       .eq('id', product.id)
 
@@ -165,7 +168,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Price (USD) *</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Base Price (USD) *</label>
             <input type="number" step="0.01" min="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
           </div>
 
@@ -177,40 +180,40 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
             </select>
           </div>
 
-          {/* ✅ Popularity Field */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Popularity (Higher = shown first on home)</label>
-            <input
-              type="number"
-              value={popularity}
-              onChange={(e) => setPopularity(parseInt(e.target.value) || 0)}
-              className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
-              placeholder="e.g., 100"
-            />
+            <label className="block text-sm font-medium text-gray-300 mb-1">Popularity</label>
+            <input type="number" value={popularity} onChange={(e) => setPopularity(parseInt(e.target.value) || 0)} className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Variants</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              {isService ? 'Package Options (Name + Extra Price)' : 'Variants (Size + Stock)'}
+            </label>
             {variants.map((variant, index) => (
               <div key={index} className="flex gap-2 mb-2 items-center">
                 <input
                   type="text"
-                  placeholder={productType === 'service' ? 'Package (e.g. Basic)' : 'Size (e.g. M)'}
+                  placeholder={isService ? 'Package name' : 'Size'}
                   value={variant.key}
                   onChange={(e) => updateVariantKey(index, e.target.value)}
                   className="w-1/2 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
                 />
                 <input
                   type="number"
-                  placeholder="Stock"
-                  value={variant.value}
-                  onChange={(e) => updateVariantValue(index, parseInt(e.target.value) || 0)}
+                  step={isService ? "0.01" : "1"}
+                  min="0"
+                  placeholder={isService ? 'Extra price' : 'Stock'}
+                  value={isService ? (variant.value / 100).toFixed(2) : variant.value}
+                  onChange={(e) => updateVariantValue(index, parseFloat(e.target.value) || 0)}
                   className="w-1/3 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
                 />
                 <button type="button" onClick={() => removeVariant(index)} className="text-red-400 hover:text-red-300 text-sm">✕</button>
               </div>
             ))}
             <button type="button" onClick={addVariant} className="text-sm text-blue-400 hover:text-blue-300">+ Add Variant</button>
+            <p className="text-gray-500 text-xs mt-1">
+              {isService ? 'Extra price added to base price.' : 'Stock quantity for this size.'}
+            </p>
           </div>
 
           {existingImages.length > 0 && (

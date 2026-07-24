@@ -3,23 +3,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 
 interface EditProductModalProps {
   isOpen: boolean
@@ -33,61 +16,8 @@ interface EditProductModalProps {
     is_pre_order: boolean
     estimated_ship_date?: string
     images_json?: string[]
+    variants_json?: any
   } | null
-}
-
-// Sortable Item Component
-interface SortableItemProps {
-  id: string
-  url: string
-  isNew: boolean
-  onRemove: (id: string) => void
-}
-
-function SortableItem({ id, url, isNew, onRemove }: SortableItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  }
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className="relative w-16 h-16 bg-gray-800 rounded border border-gray-700 group cursor-grab active:cursor-grabbing"
-    >
-      <Image src={url} alt="Product image" fill className="object-cover rounded" />
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition flex items-center justify-center">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            onRemove(id)
-          }}
-          className="bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-700 opacity-0 group-hover:opacity-100 transition"
-        >
-          ×
-        </button>
-      </div>
-      {isNew && (
-        <span className="absolute bottom-0 left-0 right-0 bg-blue-600 text-white text-[8px] text-center uppercase font-bold py-0.5">
-          New
-        </span>
-      )}
-    </div>
-  )
 }
 
 export default function EditProductModal({ isOpen, onClose, product }: EditProductModalProps) {
@@ -97,16 +27,11 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
   const [productType, setProductType] = useState('merch')
   const [isPreOrder, setIsPreOrder] = useState(false)
   const [estimatedShipDate, setEstimatedShipDate] = useState('')
-  const [imageItems, setImageItems] = useState<{ id: string; url: string; isNew: boolean; file?: File }[]>([])
+  const [existingImages, setExistingImages] = useState<string[]>([])
+  const [newFiles, setNewFiles] = useState<File[]>([])
+  const [variants, setVariants] = useState<{ key: string; value: number }[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  )
 
   useEffect(() => {
     if (product) {
@@ -116,66 +41,50 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
       setProductType(product.product_type || 'merch')
       setIsPreOrder(product.is_pre_order || false)
       setEstimatedShipDate(product.estimated_ship_date || '')
-      // Initialize image items from existing images
-      const existing = (product.images_json || []).map((url, index) => ({
-        id: `existing-${index}-${Date.now()}`,
-        url,
-        isNew: false,
-      }))
-      setImageItems(existing)
+      setExistingImages(product.images_json || [])
+
+      // Load variants
+      if (product.variants_json) {
+        const entries = Object.entries(product.variants_json)
+        setVariants(entries.map(([key, value]) => ({ key, value: value as number })))
+      } else {
+        setVariants([])
+      }
     }
   }, [product])
 
   if (!isOpen || !product) return null
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files).map((file) => ({
-        id: `new-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-        url: URL.createObjectURL(file),
-        isNew: true,
-        file,
-      }))
-      setImageItems((prev) => [...prev, ...newFiles])
-      // Reset the input so the same file can be re-selected if needed
-      e.target.value = ''
-    }
+    if (e.target.files) setNewFiles(Array.from(e.target.files))
   }
 
-  const handleRemoveImage = (id: string) => {
-    setImageItems((prev) => prev.filter((item) => item.id !== id))
+  const removeExistingImage = (urlToRemove: string) => {
+    setExistingImages(existingImages.filter(url => url !== urlToRemove))
   }
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    if (over && active.id !== over.id) {
-      setImageItems((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id)
-        const newIndex = items.findIndex((item) => item.id === over.id)
-        return arrayMove(items, oldIndex, newIndex)
-      })
-    }
+  const addVariant = () => setVariants([...variants, { key: '', value: 0 }])
+  const removeVariant = (index: number) => setVariants(variants.filter((_, i) => i !== index))
+  const updateVariantKey = (index: number, key: string) => {
+    const newVariants = [...variants]
+    newVariants[index].key = key
+    setVariants(newVariants)
+  }
+  const updateVariantValue = (index: number, value: number) => {
+    const newVariants = [...variants]
+    newVariants[index].value = value
+    setVariants(newVariants)
   }
 
-  const uploadNewImages = async (files: File[]): Promise<string[]> => {
+  const uploadNewImages = async (): Promise<string[]> => {
     const uploadedUrls: string[] = []
-    for (const file of files) {
+    for (const file of newFiles) {
       const fileExt = file.name.split('.').pop()
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`
       const filePath = `products/${fileName}`
-
-      const { error: uploadError } = await supabase.storage
-        .from('products')
-        .upload(filePath, file)
-
-      if (uploadError) {
-        throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`)
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('products')
-        .getPublicUrl(filePath)
-
+      const { error: uploadError } = await supabase.storage.from('products').upload(filePath, file)
+      if (uploadError) throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`)
+      const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(filePath)
       uploadedUrls.push(publicUrl)
     }
     return uploadedUrls
@@ -193,189 +102,147 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
       return
     }
 
-    try {
-      // Separate existing URLs and new files
-      const existingUrls = imageItems.filter(item => !item.isNew).map(item => item.url)
-      const newFiles = imageItems.filter(item => item.isNew && item.file).map(item => item.file!)
+    // Build variants JSON
+    const variantsJson = variants.reduce((acc, v) => {
+      if (v.key) acc[v.key] = v.value
+      return acc
+    }, {} as Record<string, number>)
 
-      let uploadedUrls: string[] = []
-      if (newFiles.length > 0) {
-        uploadedUrls = await uploadNewImages(newFiles)
+    let allImages = [...existingImages]
+    if (newFiles.length > 0) {
+      try {
+        const uploadedUrls = await uploadNewImages()
+        allImages = [...allImages, ...uploadedUrls]
+      } catch (err: any) {
+        setError(err.message)
+        setLoading(false)
+        return
       }
-
-      // Final ordered list: existing URLs (in order) + newly uploaded URLs (in order)
-      const finalImageUrls = [...existingUrls, ...uploadedUrls]
-
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({
-          name,
-          description,
-          price: priceInCents,
-          product_type: productType,
-          is_pre_order: isPreOrder,
-          estimated_ship_date: isPreOrder ? estimatedShipDate : null,
-          images_json: finalImageUrls,
-        })
-        .eq('id', product.id)
-
-      if (updateError) {
-        throw new Error(updateError.message)
-      }
-
-      setLoading(false)
-      onClose()
-      window.location.reload()
-    } catch (err: any) {
-      setError(err.message)
-      setLoading(false)
     }
+
+    const { error: updateError } = await supabase
+      .from('products')
+      .update({
+        name,
+        description,
+        price: priceInCents,
+        product_type: productType,
+        is_pre_order: isPreOrder,
+        estimated_ship_date: isPreOrder ? estimatedShipDate : null,
+        images_json: allImages,
+        variants_json: variantsJson,
+      })
+      .eq('id', product.id)
+
+    if (updateError) {
+      setError(updateError.message)
+      setLoading(false)
+      return
+    }
+
+    setLoading(false)
+    onClose()
+    window.location.reload()
   }
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-unifraktur text-white mb-4">Edit Product</h2>
-
-        {error && (
-          <div className="bg-red-900/50 border border-red-800 text-red-200 px-4 py-2 rounded mb-4 text-sm">
-            {error}
-          </div>
-        )}
+        {error && <div className="bg-red-900/50 border border-red-800 text-red-200 px-4 py-2 rounded mb-4 text-sm">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Product Name *</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
-            />
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
-            />
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Price (USD) *</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0.01"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              required
-              className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
-            />
+            <input type="number" step="0.01" min="0.01" value={price} onChange={(e) => setPrice(e.target.value)} required className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Product Type</label>
-            <select
-              value={productType}
-              onChange={(e) => setProductType(e.target.value)}
-              className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
-            >
+            <select value={productType} onChange={(e) => setProductType(e.target.value)} className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500">
               <option value="merch">Merch (Physical)</option>
               <option value="service">Service (Media Package)</option>
             </select>
           </div>
 
-          {/* Sortable Images */}
+          {/* ✅ NEW: Variant Manager */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Images <span className="text-gray-500 text-xs font-normal">(Drag to reorder. First is main photo)</span>
-            </label>
-            {imageItems.length > 0 ? (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={imageItems.map(item => item.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <div className="flex flex-wrap gap-2 p-2 bg-black/30 rounded border border-gray-700 min-h-18">
-                    {imageItems.map((item) => (
-                      <SortableItem
-                        key={item.id}
-                        id={item.id}
-                        url={item.url}
-                        isNew={item.isNew}
-                        onRemove={handleRemoveImage}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            ) : (
-              <div className="text-gray-500 text-sm p-2 bg-black/30 rounded border border-gray-700 text-center">
-                No images yet. Upload some below.
+            <label className="block text-sm font-medium text-gray-300 mb-1">Variants (Size / Stock)</label>
+            {variants.map((variant, index) => (
+              <div key={index} className="flex gap-2 mb-2 items-center">
+                <input
+                  type="text"
+                  placeholder="Size (e.g. M)"
+                  value={variant.key}
+                  onChange={(e) => updateVariantKey(index, e.target.value)}
+                  className="w-1/2 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
+                />
+                <input
+                  type="number"
+                  placeholder="Stock"
+                  value={variant.value}
+                  onChange={(e) => updateVariantValue(index, parseInt(e.target.value) || 0)}
+                  className="w-1/3 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
+                />
+                <button type="button" onClick={() => removeVariant(index)} className="text-red-400 hover:text-red-300 text-sm">✕</button>
               </div>
-            )}
-            <p className="text-gray-500 text-xs mt-1">Drag to reorder. Click × to remove.</p>
+            ))}
+            <button type="button" onClick={addVariant} className="text-sm text-blue-400 hover:text-blue-300">+ Add Variant</button>
           </div>
+
+          {existingImages.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Current Images</label>
+              <div className="flex flex-wrap gap-2">
+                {existingImages.map((url, idx) => (
+                  <div key={idx} className="relative w-16 h-16 bg-gray-800 rounded border border-gray-700 group">
+                    <Image src={url} alt={`Product ${idx + 1}`} fill className="object-cover rounded" />
+                    <button type="button" onClick={() => removeExistingImage(url)} className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-700">×</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Add New Images</label>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleFileChange}
-              className="w-full text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700"
-            />
+            <input type="file" accept="image/*" multiple onChange={handleFileChange} className="w-full text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700" />
+            {newFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {newFiles.map((file, idx) => (
+                  <div key={idx} className="relative w-16 h-16 bg-gray-800 rounded border border-gray-700 overflow-hidden">
+                    <Image src={URL.createObjectURL(file)} alt={`Preview ${idx + 1}`} fill className="object-cover" />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="isPreOrder"
-              checked={isPreOrder}
-              onChange={(e) => setIsPreOrder(e.target.checked)}
-              className="w-4 h-4"
-            />
+            <input type="checkbox" id="isPreOrder" checked={isPreOrder} onChange={(e) => setIsPreOrder(e.target.checked)} className="w-4 h-4" />
             <label htmlFor="isPreOrder" className="text-sm text-gray-300">This is a Pre-Order item</label>
           </div>
 
           {isPreOrder && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Estimated Ship Date</label>
-              <input
-                type="text"
-                value={estimatedShipDate}
-                onChange={(e) => setEstimatedShipDate(e.target.value)}
-                placeholder="e.g. Ships in 4-6 weeks"
-                className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
-              />
+              <input type="text" value={estimatedShipDate} onChange={(e) => setEstimatedShipDate(e.target.value)} placeholder="e.g. Ships in 4-6 weeks" className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
             </div>
           )}
 
           <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 bg-gray-800 text-gray-300 py-2 rounded hover:bg-gray-700 transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 bg-blue-600 text-white py-2 rounded font-medium hover:bg-blue-700 transition disabled:opacity-50"
-            >
-              {loading ? 'Saving...' : 'Save Changes'}
-            </button>
+            <button type="button" onClick={onClose} className="flex-1 bg-gray-800 text-gray-300 py-2 rounded hover:bg-gray-700 transition">Cancel</button>
+            <button type="submit" disabled={loading} className="flex-1 bg-blue-600 text-white py-2 rounded font-medium hover:bg-blue-700 transition disabled:opacity-50">{loading ? 'Saving...' : 'Save Changes'}</button>
           </div>
         </form>
       </div>

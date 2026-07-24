@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import Image from 'next/image'
+import { useCart } from '@/context/CartContext'
 
 type Product = {
   id: string
@@ -13,6 +14,7 @@ type Product = {
   is_pre_order: boolean
   estimated_ship_date?: string
   images_json: string[]
+  variants_json: any
 }
 
 interface QuickViewModalProps {
@@ -23,6 +25,16 @@ interface QuickViewModalProps {
 
 export default function QuickViewModal({ isOpen, onClose, product }: QuickViewModalProps) {
   const [emblaRef] = useEmblaCarousel({ loop: true })
+  const { addItem } = useCart()
+  const [selectedVariant, setSelectedVariant] = useState<string>('')
+
+  const variantKeys = product?.variants_json ? Object.keys(product.variants_json) : []
+
+  useEffect(() => {
+    if (product && variantKeys.length > 0) {
+      setSelectedVariant(variantKeys[0])
+    }
+  }, [product])
 
   useEffect(() => {
     if (isOpen) {
@@ -38,12 +50,22 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   if (!isOpen || !product) return null
 
   const images = product.images_json?.length > 0 ? product.images_json : ['/placeholder.svg']
-  const mainImage = images[0]
+
+  const handleAddToCart = () => {
+    const mainImage = product.images_json?.[0] || ''
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: mainImage,
+      variant: selectedVariant || 'Default',
+    })
+    onClose()
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
       <div className="relative bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        {/* Close button with custom SVG icon */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 z-10 p-1 bg-black/60 rounded-full hover:bg-black/80 transition text-white"
@@ -54,7 +76,6 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
         </button>
 
         <div className="grid grid-cols-1 md:grid-cols-2 h-full">
-          {/* Image Carousel */}
           <div className="relative h-80 md:h-125 bg-black overflow-hidden">
             <div className="overflow-hidden h-full" ref={emblaRef}>
               <div className="flex h-full">
@@ -66,12 +87,12 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                       fill
                       className="object-contain"
                       priority={idx === 0}
+                      sizes="(max-width: 768px) 100vw, 50vw"
                     />
                   </div>
                 ))}
               </div>
             </div>
-            {/* Dots indicator */}
             {images.length > 1 && (
               <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2">
                 {images.map((_, idx) => (
@@ -81,21 +102,16 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             )}
           </div>
 
-          {/* Product Details */}
           <div className="p-6 flex flex-col">
             <h2 className="text-2xl font-unifraktur text-white mb-1">{product.name}</h2>
             <p className="text-3xl font-bold text-white mb-2">${(product.price / 100).toFixed(2)}</p>
             
             <div className="flex flex-wrap gap-2 mb-4">
               {product.product_type === 'service' && (
-                <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded-full uppercase font-semibold">
-                  Custom
-                </span>
+                <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded-full uppercase font-semibold">Custom</span>
               )}
               {product.is_pre_order && (
-                <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full uppercase font-semibold">
-                  Pre-Order
-                </span>
+                <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full uppercase font-semibold">Pre-Order</span>
               )}
             </div>
 
@@ -103,11 +119,32 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
               <p className="text-sm text-gray-400 mb-3">Ships: {product.estimated_ship_date}</p>
             )}
 
-            <p className="text-gray-300 text-sm leading-relaxed mb-6 grow">
+            <p className="text-gray-300 text-sm leading-relaxed mb-4 grow">
               {product.description || 'No description provided.'}
             </p>
 
-            <button className="w-full bg-white text-black py-3 rounded-lg font-semibold hover:bg-gray-200 transition">
+            {/* Variant Dropdown in Quick View */}
+            {variantKeys.length > 0 && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-300 mb-1">Select Option</label>
+                <select
+                  value={selectedVariant}
+                  onChange={(e) => setSelectedVariant(e.target.value)}
+                  className="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
+                >
+                  {variantKeys.map((key) => (
+                    <option key={key} value={key}>
+                      {key} ({product.variants_json[key]} in stock)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <button
+              onClick={handleAddToCart}
+              className="w-full bg-white text-black py-3 rounded-lg font-semibold hover:bg-gray-200 transition"
+            >
               Add to Cart
             </button>
             

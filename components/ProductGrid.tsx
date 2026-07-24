@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import QuickViewModal from './QuickViewModal'
+import { useCart } from '@/context/CartContext'
 
 type Product = {
   id: string
@@ -18,9 +19,22 @@ type Product = {
 
 export default function ProductGrid({ products }: { products: Product[] }) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const { addItem } = useCart()
 
   if (!products || products.length === 0) {
     return <div className="text-gray-400">No products available</div>
+  }
+
+  const handleAddToCart = (product: Product, variant: string) => {
+    const mainImage = product.images_json?.[0] || ''
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: mainImage,
+      variant: variant || 'Default',
+    })
+    // Optional: Add a small alert or toast here later
   }
 
   return (
@@ -29,9 +43,11 @@ export default function ProductGrid({ products }: { products: Product[] }) {
         {products.map((product) => {
           const imageCount = product.images_json?.length || 0
           const mainImage = product.images_json?.[0] || ''
+          const variantKeys = product.variants_json ? Object.keys(product.variants_json) : []
+          const [selectedVariant, setSelectedVariant] = useState<string>(variantKeys[0] || '')
 
           return (
-            <div key={product.id} className="bg-gray-900 rounded-lg overflow-hidden border border-gray-800 hover:border-gray-600 transition group">
+            <div key={product.id} className="bg-gray-900 rounded-lg overflow-hidden border border-gray-800 hover:border-gray-600 transition group flex flex-col">
               <div className="relative h-64 w-full bg-gray-800">
                 {mainImage ? (
                   <>
@@ -39,8 +55,8 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                       src={mainImage}
                       alt={product.name}
                       fill
-                      // ✅ FIX: Changed from object-cover to object-contain
                       className="object-contain"
+                      sizes="(max-width: 768px) 100vw, 33vw"
                     />
                     {imageCount > 1 && (
                       <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm border border-gray-600">
@@ -66,9 +82,10 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                 </button>
               </div>
 
-              <div className="p-4">
+              <div className="p-4 flex flex-col flex-1">
                 <h3 className="text-xl font-semibold text-white">{product.name}</h3>
-                <p className="text-gray-400 text-sm mt-1 line-clamp-2">{product.description}</p>
+                <p className="text-gray-400 text-sm mt-1 line-clamp-2 flex-1">{product.description}</p>
+                
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-lg font-bold text-white">${(product.price / 100).toFixed(2)}</span>
                   {product.is_pre_order && (
@@ -82,10 +99,32 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                     </span>
                   )}
                 </div>
+
                 {product.is_pre_order && product.estimated_ship_date && (
                   <p className="text-xs text-gray-400 mt-2">Ships: {product.estimated_ship_date}</p>
                 )}
-                <button className="mt-4 w-full bg-white text-black py-2 rounded hover:bg-gray-200 transition font-medium text-sm">
+
+                {/* Variant Dropdown */}
+                {variantKeys.length > 0 && (
+                  <div className="mt-3">
+                    <select
+                      value={selectedVariant}
+                      onChange={(e) => setSelectedVariant(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
+                    >
+                      {variantKeys.map((key) => (
+                        <option key={key} value={key}>
+                          {key} ({product.variants_json[key]} in stock)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => handleAddToCart(product, selectedVariant)}
+                  className="mt-4 w-full bg-white text-black py-2 rounded hover:bg-gray-200 transition font-medium text-sm"
+                >
                   Add to Cart
                 </button>
               </div>

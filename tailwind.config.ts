@@ -9,7 +9,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        unifraktur: ['"UnifrakturMaguntia"', 'cursive'],
+        // ✅ Direct mapping to the font name
+        unifraktur: ['UnifrakturMaguntia', 'cursive'],
       },
     },
   },

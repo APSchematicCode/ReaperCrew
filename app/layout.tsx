@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import '@fontsource/unifrakturmaguntia' // ✅ This loads the font locally
+import { CartProvider } from '../context/CartContext' 
+import Footer from '../components/Footer' 
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,8 +22,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} dark`}>
-      <body className="bg-black text-white antialiased">
-        {children}
+      <body className="bg-black text-white antialiased flex flex-col min-h-screen">
+        <CartProvider> {/* ✅ Wrap everything here */}
+          {children}
+          <Footer />
+        </CartProvider>
       </body>
     </html>
   );

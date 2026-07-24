@@ -1,5 +1,16 @@
+/* 1. Self-hosted font (Bundler Agnostic) */
+@font-face {
+  font-family: 'UnifrakturMaguntia';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/unifrakturmaguntia.woff2') format('woff2');
+}
+
+/* 2. Tailwind imports */
 @import "tailwindcss";
 
+/* 3. CSS Variables & Theme */
 :root {
   --background: #ffffff;
   --foreground: #171717;

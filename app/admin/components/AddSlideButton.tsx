@@ -9,11 +9,24 @@ export default function AddSlideButton() {
   const [linkUrl, setLinkUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0])
+    const selectedFile = e.target.files?.[0]
+    if (!selectedFile) return
+
+    // Read the image to get natural dimensions
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = () => {
+        setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight })
+      }
+      img.src = event.target?.result as string
     }
+    reader.readAsDataURL(selectedFile)
+
+    setFile(selectedFile)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,11 +35,15 @@ export default function AddSlideButton() {
       setError('Please select an image.')
       return
     }
+    if (!imageDimensions) {
+      setError('Could not read image dimensions. Please try another file.')
+      return
+    }
 
     setLoading(true)
     setError('')
 
-    // 1. Upload image to Supabase Storage
+    // 1. Upload to Supabase Storage
     const fileExt = file.name.split('.').pop()
     const fileName = `${Date.now()}.${fileExt}`
     const filePath = `slides/${fileName}`
@@ -41,23 +58,23 @@ export default function AddSlideButton() {
       return
     }
 
-    // 2. Get the public URL
     const { data: { publicUrl } } = supabase.storage
       .from('slides')
       .getPublicUrl(filePath)
 
-    // 3. Insert into slides table
+    // 2. Insert into slides table WITH width and height
     const { error: insertError } = await supabase
       .from('slides')
       .insert({
         image_url: publicUrl,
         link_url: linkUrl || null,
-        display_order: 0, // We'll fix ordering on page load
+        display_order: 0,
+        width: imageDimensions.width,
+        height: imageDimensions.height,
       })
 
     if (insertError) {
       setError(`Database error: ${insertError.message}`)
-      // Clean up storage if DB fails? Too complex for now, but it's fine.
       setLoading(false)
       return
     }
@@ -66,7 +83,7 @@ export default function AddSlideButton() {
     setIsModalOpen(false)
     setFile(null)
     setLinkUrl('')
-    // Reload to show new slide
+    setImageDimensions(null)
     window.location.reload()
   }
 
@@ -83,13 +100,7 @@ export default function AddSlideButton() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-md p-6">
             <h2 className="text-2xl font-unifraktur text-white mb-4">Add New Slide</h2>
-
-            {error && (
-              <div className="bg-red-900/50 border border-red-800 text-red-200 px-4 py-2 rounded mb-4 text-sm">
-                {error}
-              </div>
-            )}
-
+            {error && <div className="bg-red-900/50 border border-red-800 text-red-200 px-4 py-2 rounded mb-4 text-sm">{error}</div>}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Image *</label>
@@ -100,33 +111,23 @@ export default function AddSlideButton() {
                   required
                   className="w-full text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700"
                 />
-                <p className="text-gray-500 text-xs mt-1">Recommended: Wide landscape (e.g., 1400x600). Will crop to fit.</p>
+                {imageDimensions && (
+                  <p className="text-gray-400 text-xs mt-1">Detected: {imageDimensions.width}×{imageDimensions.height}</p>
+                )}
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Link URL (Optional)</label>
                 <input
                   type="url"
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
-                  placeholder="e.g., /shop or https://..."
+                  placeholder="e.g., /shop"
                   className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
                 />
               </div>
-
               <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 bg-gray-800 text-gray-300 py-2 rounded hover:bg-gray-700 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-white text-black py-2 rounded font-medium hover:bg-gray-200 transition disabled:opacity-50"
-                >
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-800 text-gray-300 py-2 rounded hover:bg-gray-700 transition">Cancel</button>
+                <button type="submit" disabled={loading} className="flex-1 bg-white text-black py-2 rounded font-medium hover:bg-gray-200 transition disabled:opacity-50">
                   {loading ? 'Uploading...' : 'Add Slide'}
                 </button>
               </div>

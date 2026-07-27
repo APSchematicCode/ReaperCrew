@@ -10,6 +10,8 @@ interface AddProductModalProps {
   onProductAdded: () => void
 }
 
+type ImageMetadata = Record<string, { width: number; height: number }>
+
 export default function AddProductModal({ isOpen, onClose, onProductAdded }: AddProductModalProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -23,12 +25,29 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [uploadProgress, setUploadProgress] = useState('')
+  const [imageMetadata, setImageMetadata] = useState<ImageMetadata>({})
 
   if (!isOpen) return null
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFiles(Array.from(e.target.files))
+      const newFiles = Array.from(e.target.files)
+      setFiles(newFiles)
+
+      // Read dimensions for each file
+      const metadata: ImageMetadata = {}
+      newFiles.forEach((file) => {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          const img = new window.Image()
+          img.onload = () => {
+            metadata[file.name] = { width: img.naturalWidth, height: img.naturalHeight }
+            setImageMetadata({ ...imageMetadata, ...metadata })
+          }
+          img.src = event.target?.result as string
+        }
+        reader.readAsDataURL(file)
+      })
     }
   }
 
@@ -41,24 +60,32 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
   }
   const updateVariantValue = (index: number, value: number) => {
     const newVariants = [...variants]
-    // If service, store as cents (multiply by 100). If merch, store as stock.
     const finalValue = productType === 'service' ? Math.round(value * 100) : value
     newVariants[index].value = finalValue
     setVariants(newVariants)
   }
 
-  const uploadImages = async (): Promise<string[]> => {
+  const uploadImages = async (): Promise<{ urls: string[]; metadata: ImageMetadata }> => {
     const uploadedUrls: string[] = []
+    const metadata: ImageMetadata = {}
+
     for (const file of files) {
       const fileExt = file.name.split('.').pop()
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`
       const filePath = `products/${fileName}`
+
       const { error: uploadError } = await supabase.storage.from('products').upload(filePath, file)
       if (uploadError) throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`)
+
       const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(filePath)
       uploadedUrls.push(publicUrl)
+
+      // Store metadata using URL as key
+      if (imageMetadata[file.name]) {
+        metadata[publicUrl] = imageMetadata[file.name]
+      }
     }
-    return uploadedUrls
+    return { urls: uploadedUrls, metadata }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,9 +107,12 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
     }, {} as Record<string, number>)
 
     let imageUrls: string[] = []
+    let metadata: ImageMetadata = {}
     if (files.length > 0) {
       try {
-        imageUrls = await uploadImages()
+        const result = await uploadImages()
+        imageUrls = result.urls
+        metadata = result.metadata
       } catch (err: any) {
         setError(err.message)
         setLoading(false)
@@ -102,6 +132,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
       images_json: imageUrls,
       variants_json: variantsJson,
       popularity: popularity,
+      image_metadata: metadata,
     })
 
     if (insertError) {
@@ -122,6 +153,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
     setFiles([])
     setVariants([])
     setPopularity(0)
+    setImageMetadata({})
   }
 
   const isService = productType === 'service'
@@ -158,20 +190,17 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Popularity (Higher = shown first on home)</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Popularity</label>
             <input type="number" value={popularity} onChange={(e) => setPopularity(parseInt(e.target.value) || 0)} className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" placeholder="e.g., 100" />
           </div>
 
-          {/* ✅ Variants with dynamic labels */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              {isService ? 'Package Options (Name + Extra Price)' : 'Variants (Size + Stock)'}
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">{isService ? 'Package Options (Name + Extra Price)' : 'Variants (Size + Stock)'}</label>
             {variants.map((variant, index) => (
               <div key={index} className="flex gap-2 mb-2 items-center">
                 <input
                   type="text"
-                  placeholder={isService ? 'Package name (e.g. Pro)' : 'Size (e.g. M)'}
+                  placeholder={isService ? 'Package name' : 'Size'}
                   value={variant.key}
                   onChange={(e) => updateVariantKey(index, e.target.value)}
                   className="w-1/2 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
@@ -180,7 +209,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
                   type="number"
                   step={isService ? "0.01" : "1"}
                   min="0"
-                  placeholder={isService ? 'Extra price (e.g. 20)' : 'Stock'}
+                  placeholder={isService ? 'Extra price' : 'Stock'}
                   value={isService ? (variant.value / 100).toFixed(2) : variant.value}
                   onChange={(e) => updateVariantValue(index, parseFloat(e.target.value) || 0)}
                   className="w-1/3 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
@@ -189,9 +218,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
               </div>
             ))}
             <button type="button" onClick={addVariant} className="text-sm text-blue-400 hover:text-blue-300">+ Add Variant</button>
-            <p className="text-gray-500 text-xs mt-1">
-              {isService ? 'Extra price will be added to the base price.' : 'Set the stock quantity for each size.'}
-            </p>
+            <p className="text-gray-500 text-xs mt-1">{isService ? 'Extra price added to base price.' : 'Stock quantity for this size.'}</p>
           </div>
 
           <div>
@@ -202,6 +229,11 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
                 {files.map((file, idx) => (
                   <div key={idx} className="relative w-16 h-16 bg-gray-800 rounded border border-gray-700 overflow-hidden">
                     <Image src={URL.createObjectURL(file)} alt={`Preview ${idx + 1}`} fill className="object-cover" />
+                    {imageMetadata[file.name] && (
+                      <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] text-center">
+                        {imageMetadata[file.name].width}×{imageMetadata[file.name].height}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

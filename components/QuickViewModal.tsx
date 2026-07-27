@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import Image from 'next/image'
 import { useCart } from '@/context/CartContext'
@@ -15,6 +15,7 @@ type Product = {
   estimated_ship_date?: string
   images_json: string[]
   variants_json: any
+  image_metadata: Record<string, { width: number; height: number }>
 }
 
 interface QuickViewModalProps {
@@ -24,17 +25,34 @@ interface QuickViewModalProps {
 }
 
 export default function QuickViewModal({ isOpen, onClose, product }: QuickViewModalProps) {
-  const [emblaRef] = useEmblaCarousel({ loop: true })
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true })
   const { addItem } = useCart()
   const [selectedVariant, setSelectedVariant] = useState<string>('')
   const [quantity, setQuantity] = useState<number>(1)
+  const [containerHeight, setContainerHeight] = useState<number>(400)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isReady, setIsReady] = useState(false)
 
   const variantKeys = product?.variants_json ? Object.keys(product.variants_json) : []
   const isService = product?.product_type === 'service'
-  const variantExtra = product?.variants_json?.[selectedVariant] || 0
+  const images = product?.images_json || []
 
-  // ✅ DISPLAY PRICE: Always shows the BASE price only (never changes)
-  const displayPrice = product?.price || 0
+  const updateHeight = useCallback(() => {
+    if (!emblaApi || !containerRef.current || !product) return
+    const index = emblaApi.selectedScrollSnap()
+    const imageUrl = images[index]
+    const metadata = product.image_metadata?.[imageUrl]
+    
+    if (metadata && metadata.width && metadata.height) {
+      const containerWidth = containerRef.current.clientWidth
+      const aspectRatio = metadata.width / metadata.height
+      const calculatedHeight = containerWidth / aspectRatio
+      setContainerHeight(calculatedHeight)
+    } else {
+      // Fallback: default height if no metadata
+      setContainerHeight(400)
+    }
+  }, [emblaApi, images, product])
 
   useEffect(() => {
     if (product && variantKeys.length > 0) {
@@ -42,6 +60,20 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     }
     setQuantity(1)
   }, [product])
+
+  useEffect(() => {
+    if (!emblaApi || !product) return
+    setTimeout(() => {
+      updateHeight()
+      setIsReady(true)
+    }, 100)
+    emblaApi.on('select', updateHeight)
+    window.addEventListener('resize', updateHeight)
+    return () => {
+      emblaApi.off('select', updateHeight)
+      window.removeEventListener('resize', updateHeight)
+    }
+  }, [emblaApi, updateHeight, product])
 
   useEffect(() => {
     if (isOpen) {
@@ -56,13 +88,12 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
 
   if (!isOpen || !product) return null
 
-  const images = product.images_json?.length > 0 ? product.images_json : ['/placeholder.svg']
-
   const handleAddToCart = () => {
     const mainImage = product.images_json?.[0] || ''
     let finalPrice = product.price
+    const variantExtra = product.variants_json?.[selectedVariant] || 0
     if (isService && variantExtra > 0) {
-      finalPrice = product.price + variantExtra // Cart gets the total price
+      finalPrice = product.price + variantExtra
     }
     addItem({
       id: product.id,
@@ -88,7 +119,12 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
         </button>
 
         <div className="grid grid-cols-1 md:grid-cols-2 h-full">
-          <div className="relative h-80 md:h-125 bg-black overflow-hidden">
+          {/* Dynamic Image Container */}
+          <div
+            ref={containerRef}
+            className="relative bg-black overflow-hidden transition-[height] duration-500 ease-in-out"
+            style={{ height: isReady ? containerHeight : 'auto' }}
+          >
             <div className="overflow-hidden h-full" ref={emblaRef}>
               <div className="flex h-full">
                 {images.map((url, idx) => (
@@ -116,15 +152,11 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
 
           <div className="p-6 flex flex-col">
             <h2 className="text-2xl font-unifraktur text-white mb-1">{product.name}</h2>
-            <p className="text-3xl font-bold text-white mb-2">${(displayPrice / 100).toFixed(2)}</p>
+            <p className="text-3xl font-bold text-white mb-2">${(product.price / 100).toFixed(2)}</p>
 
             <div className="flex flex-wrap gap-2 mb-4">
-              {isService && (
-                <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded-full uppercase font-semibold">Custom</span>
-              )}
-              {product.is_pre_order && (
-                <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full uppercase font-semibold">Pre-Order</span>
-              )}
+              {isService && <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded-full uppercase font-semibold">Custom</span>}
+              {product.is_pre_order && <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full uppercase font-semibold">Pre-Order</span>}
             </div>
 
             {product.is_pre_order && product.estimated_ship_date && (
@@ -154,38 +186,19 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                     )
                   })}
                 </select>
-                <p className="text-gray-500 text-xs mt-1">
-                  {isService ? 'Choose a package that fits your needs' : 'Choose your size'}
-                </p>
               </div>
             )}
 
             <div className="flex items-center gap-3 mb-4">
-              <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center"
-              >
-                -
-              </button>
+              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center">-</button>
               <span className="text-white w-8 text-center">{quantity}</span>
-              <button
-                onClick={() => setQuantity(quantity + 1)}
-                className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center"
-              >
-                +
-              </button>
+              <button onClick={() => setQuantity(quantity + 1)} className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center">+</button>
             </div>
 
-            <button
-              onClick={handleAddToCart}
-              className="w-full bg-white text-black py-3 rounded-lg font-semibold hover:bg-gray-200 transition"
-            >
+            <button onClick={handleAddToCart} className="w-full bg-white text-black py-3 rounded-lg font-semibold hover:bg-gray-200 transition">
               Add to Cart
             </button>
-
-            <p className="text-xs text-gray-500 text-center mt-3">
-              {images.length} image{images.length !== 1 ? 's' : ''}
-            </p>
+            <p className="text-xs text-gray-500 text-center mt-3">{images.length} image{images.length !== 1 ? 's' : ''}</p>
           </div>
         </div>
       </div>

@@ -18,8 +18,11 @@ interface EditProductModalProps {
     images_json?: string[]
     variants_json?: any
     popularity?: number
+    image_metadata?: Record<string, { width: number; height: number }>
   } | null
 }
+
+type ImageMetadata = Record<string, { width: number; height: number }>
 
 export default function EditProductModal({ isOpen, onClose, product }: EditProductModalProps) {
   const [name, setName] = useState('')
@@ -34,6 +37,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
   const [popularity, setPopularity] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [imageMetadata, setImageMetadata] = useState<ImageMetadata>({})
 
   const isService = productType === 'service'
 
@@ -47,6 +51,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
       setEstimatedShipDate(product.estimated_ship_date || '')
       setExistingImages(product.images_json || [])
       setPopularity(product.popularity || 0)
+      setImageMetadata(product.image_metadata || {})
 
       if (product.variants_json) {
         const entries = Object.entries(product.variants_json)
@@ -60,11 +65,33 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
   if (!isOpen || !product) return null
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) setNewFiles(Array.from(e.target.files))
+    if (e.target.files) {
+      const newFilesArray = Array.from(e.target.files)
+      setNewFiles(newFilesArray)
+
+      // Read dimensions for each new file
+      const metadata: ImageMetadata = {}
+      newFilesArray.forEach((file) => {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          const img = new window.Image()
+          img.onload = () => {
+            metadata[file.name] = { width: img.naturalWidth, height: img.naturalHeight }
+            setImageMetadata((prev) => ({ ...prev, ...metadata }))
+          }
+          img.src = event.target?.result as string
+        }
+        reader.readAsDataURL(file)
+      })
+    }
   }
 
   const removeExistingImage = (urlToRemove: string) => {
     setExistingImages(existingImages.filter(url => url !== urlToRemove))
+    // Also remove its metadata
+    const newMetadata = { ...imageMetadata }
+    delete newMetadata[urlToRemove]
+    setImageMetadata(newMetadata)
   }
 
   const addVariant = () => setVariants([...variants, { key: '', value: 0 }])
@@ -81,18 +108,26 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
     setVariants(newVariants)
   }
 
-  const uploadNewImages = async (): Promise<string[]> => {
+  const uploadNewImages = async (): Promise<{ urls: string[]; metadata: ImageMetadata }> => {
     const uploadedUrls: string[] = []
+    const metadata: ImageMetadata = {}
+
     for (const file of newFiles) {
       const fileExt = file.name.split('.').pop()
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`
       const filePath = `products/${fileName}`
+
       const { error: uploadError } = await supabase.storage.from('products').upload(filePath, file)
       if (uploadError) throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`)
+
       const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(filePath)
       uploadedUrls.push(publicUrl)
+
+      if (imageMetadata[file.name]) {
+        metadata[publicUrl] = imageMetadata[file.name]
+      }
     }
-    return uploadedUrls
+    return { urls: uploadedUrls, metadata }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -113,10 +148,13 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
     }, {} as Record<string, number>)
 
     let allImages = [...existingImages]
+    let finalMetadata = { ...imageMetadata }
+
     if (newFiles.length > 0) {
       try {
-        const uploadedUrls = await uploadNewImages()
-        allImages = [...allImages, ...uploadedUrls]
+        const result = await uploadNewImages()
+        allImages = [...allImages, ...result.urls]
+        finalMetadata = { ...finalMetadata, ...result.metadata }
       } catch (err: any) {
         setError(err.message)
         setLoading(false)
@@ -136,6 +174,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
         images_json: allImages,
         variants_json: variantsJson,
         popularity: popularity,
+        image_metadata: finalMetadata,
       })
       .eq('id', product.id)
 
@@ -186,9 +225,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              {isService ? 'Package Options (Name + Extra Price)' : 'Variants (Size + Stock)'}
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">{isService ? 'Package Options (Name + Extra Price)' : 'Variants (Size + Stock)'}</label>
             {variants.map((variant, index) => (
               <div key={index} className="flex gap-2 mb-2 items-center">
                 <input
@@ -211,35 +248,57 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
               </div>
             ))}
             <button type="button" onClick={addVariant} className="text-sm text-blue-400 hover:text-blue-300">+ Add Variant</button>
-            <p className="text-gray-500 text-xs mt-1">
-              {isService ? 'Extra price added to base price.' : 'Stock quantity for this size.'}
-            </p>
+            <p className="text-gray-500 text-xs mt-1">{isService ? 'Extra price added to base price.' : 'Stock quantity for this size.'}</p>
           </div>
 
+          {/* Existing Images with metadata display */}
           {existingImages.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Current Images</label>
               <div className="flex flex-wrap gap-2">
-                {existingImages.map((url, idx) => (
-                  <div key={idx} className="relative w-16 h-16 bg-gray-800 rounded border border-gray-700 group">
-                    <Image src={url} alt={`Product ${idx + 1}`} fill className="object-cover rounded" />
-                    <button type="button" onClick={() => removeExistingImage(url)} className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-700">×</button>
-                  </div>
-                ))}
+                {existingImages.map((url, idx) => {
+                  const meta = imageMetadata[url]
+                  return (
+                    <div key={idx} className="relative w-16 h-16 bg-gray-800 rounded border border-gray-700 group">
+                      <Image src={url} alt={`Product ${idx + 1}`} fill className="object-cover rounded" />
+                      {meta && (
+                        <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] text-center">
+                          {meta.width}×{meta.height}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeExistingImage(url)}
+                        className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-700"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
 
+          {/* New Images with preview and metadata */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Add New Images</label>
             <input type="file" accept="image/*" multiple onChange={handleFileChange} className="w-full text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700" />
             {newFiles.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
-                {newFiles.map((file, idx) => (
-                  <div key={idx} className="relative w-16 h-16 bg-gray-800 rounded border border-gray-700 overflow-hidden">
-                    <Image src={URL.createObjectURL(file)} alt={`Preview ${idx + 1}`} fill className="object-cover" />
-                  </div>
-                ))}
+                {newFiles.map((file, idx) => {
+                  const meta = imageMetadata[file.name]
+                  return (
+                    <div key={idx} className="relative w-16 h-16 bg-gray-800 rounded border border-gray-700 overflow-hidden">
+                      <Image src={URL.createObjectURL(file)} alt={`Preview ${idx + 1}`} fill className="object-cover" />
+                      {meta && (
+                        <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] text-center">
+                          {meta.width}×{meta.height}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>

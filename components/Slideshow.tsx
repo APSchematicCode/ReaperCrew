@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect, useCallback, useRef } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import Autoplay from 'embla-carousel-autoplay'
 import Image from 'next/image'
@@ -9,14 +10,13 @@ type Slide = {
   image_url: string
   link_url?: string
   display_order: number
+  width: number | null
+  height: number | null
 }
 
 export default function Slideshow({ slides }: { slides: Slide[] }) {
-  const [emblaRef] = useEmblaCarousel(
-    { 
-      loop: true,
-      duration: 30,
-    },
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    { loop: true, duration: 30 },
     [
       Autoplay({
         delay: 10000,
@@ -25,39 +25,79 @@ export default function Slideshow({ slides }: { slides: Slide[] }) {
       })
     ]
   )
+  const [containerHeight, setContainerHeight] = useState<number>(400) // fallback
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isReady, setIsReady] = useState(false)
+
+  const updateHeight = useCallback(() => {
+    if (!emblaApi || !containerRef.current) return
+    const index = emblaApi.selectedScrollSnap()
+    const slide = slides[index]
+    if (slide && slide.width && slide.height) {
+      // Get the actual width of the container
+      const containerWidth = containerRef.current.clientWidth
+      const aspectRatio = slide.width / slide.height
+      const calculatedHeight = containerWidth / aspectRatio
+      setContainerHeight(calculatedHeight)
+    }
+  }, [emblaApi, slides])
+
+  useEffect(() => {
+    if (!emblaApi) return
+
+    // Initial height update
+    setTimeout(() => {
+      updateHeight()
+      setIsReady(true)
+    }, 100)
+
+    emblaApi.on('select', updateHeight)
+    window.addEventListener('resize', updateHeight)
+
+    return () => {
+      emblaApi.off('select', updateHeight)
+      window.removeEventListener('resize', updateHeight)
+    }
+  }, [emblaApi, updateHeight])
 
   if (!slides || slides.length === 0) {
     return <div className="h-64 bg-gray-900 flex items-center justify-center text-gray-500">No slides available</div>
   }
 
   return (
-    <div className="overflow-hidden bg-black" ref={emblaRef}>
-      <div className="flex">
-        {slides.map((slide) => (
-          <div key={slide.id} className="flex-[0_0_100%] min-w-0 relative h-64 sm:h-96 md:h-125">
-            {slide.link_url ? (
-              <a href={slide.link_url} className="block w-full h-full">
-                <Image
-                  src={slide.image_url}
-                  alt="Slide"
-                  fill
-                  // ✅ FIX: Changed from object-cover to object-contain
-                  className="object-contain"
-                  priority
-                />
-              </a>
-            ) : (
-              <Image
-                src={slide.image_url}
-                alt="Slide"
-                fill
-                // ✅ FIX: Changed from object-cover to object-contain
-                className="object-contain"
-                priority
-              />
-            )}
+    <div className="w-full overflow-hidden bg-black">
+      <div
+        ref={containerRef}
+        className="relative w-full transition-[height] duration-500 ease-in-out"
+        style={{ height: isReady ? containerHeight : 'auto' }}
+      >
+        <div className="overflow-hidden h-full" ref={emblaRef}>
+          <div className="flex h-full">
+            {slides.map((slide) => (
+              <div key={slide.id} className="flex-[0_0_100%] min-w-0 relative h-full">
+                {slide.link_url ? (
+                  <a href={slide.link_url} className="block w-full h-full">
+                    <Image
+                      src={slide.image_url}
+                      alt="Slide"
+                      fill
+                      className="object-contain"
+                      priority
+                    />
+                  </a>
+                ) : (
+                  <Image
+                    src={slide.image_url}
+                    alt="Slide"
+                    fill
+                    className="object-contain"
+                    priority
+                  />
+                )}
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
     </div>
   )

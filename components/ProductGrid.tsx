@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import QuickViewModal from './QuickViewModal'
 import { useCart } from '@/context/CartContext'
@@ -53,10 +53,21 @@ export default function ProductGrid({ products }: { products: Product[] }) {
           const imageCount = product.images_json?.length || 0
           const mainImage = product.images_json?.[0] || ''
           const variantKeys = product.variants_json ? Object.keys(product.variants_json) : []
-          const [selectedVariant, setSelectedVariant] = useState<string>(variantKeys[0] || '')
+          const [selectedVariant, setSelectedVariant] = useState<string>('')
           const [quantity, setQuantity] = useState<number>(1)
           const isService = product.product_type === 'service'
-          const isOutOfStock = product.out_of_stock === true
+
+          const isGloballyOutOfStock = product.out_of_stock === true
+          const allVariantsOOS = variantKeys.every(key => (product.variants_json?.[key] || 0) <= 0)
+          const selectedVariantStock = selectedVariant ? (product.variants_json?.[selectedVariant] || 0) : 0
+          const isSelectedVariantOOS = selectedVariantStock <= 0
+
+          // Auto-select the first variant on load
+          useEffect(() => {
+            if (variantKeys.length > 0 && !selectedVariant) {
+              setSelectedVariant(variantKeys[0])
+            }
+          }, [variantKeys, selectedVariant])
 
           return (
             <div key={product.id} className="bg-gray-900 rounded-lg overflow-hidden border border-gray-800 hover:border-gray-600 transition group flex flex-col">
@@ -100,7 +111,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
 
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-lg font-bold text-white">${(product.price / 100).toFixed(2)}</span>
-                  {isOutOfStock ? (
+                  {isGloballyOutOfStock || allVariantsOOS ? (
                     <span className="text-xs bg-red-900 text-red-300 px-2 py-1 rounded-full uppercase font-semibold">Out of Stock</span>
                   ) : product.is_pre_order ? (
                     <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full uppercase font-semibold">Pre-Order</span>
@@ -109,25 +120,56 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                   ) : null}
                 </div>
 
-                {product.is_pre_order && product.estimated_ship_date && !isOutOfStock && (
+                {product.is_pre_order && product.estimated_ship_date && !isGloballyOutOfStock && !allVariantsOOS && (
                   <p className="text-xs text-gray-400 mt-2">Will start shipping {product.estimated_ship_date}</p>
                 )}
 
-                {isOutOfStock ? (
-                  // Out of Stock State
+                {/* ✅ DROPDOWN: All variants are selectable, including OOS ones */}
+                {variantKeys.length > 0 && (
+                  <div className="mt-3">
+                    <select
+                      value={selectedVariant}
+                      onChange={(e) => setSelectedVariant(e.target.value)}
+                      className={`w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500 ${
+                        isGloballyOutOfStock ? 'opacity-50 pointer-events-none' : ''
+                      }`}
+                      disabled={isGloballyOutOfStock}
+                    >
+                      {variantKeys.map((key) => {
+                        const stock = product.variants_json[key] || 0
+                        const isOOS = stock <= 0
+                        return (
+                          <option key={key} value={key} className={isOOS ? 'text-red-400' : 'text-white'}>
+                            {key} {isService ? `(+$${(stock / 100).toFixed(2)})` : isOOS ? '(Out of Stock)' : `(${stock} in stock)`}
+                          </option>
+                        )
+                      })}
+                    </select>
+                    <p className="text-gray-500 text-xs mt-1">
+                      {isService ? 'Select a package option' : 'Select a size'}
+                    </p>
+                  </div>
+                )}
+
+                {/* ✅ RENDER LOGIC: Show Waitlist for OOS variant, Add to Cart for In Stock */}
+                {(isGloballyOutOfStock || allVariantsOOS) ? (
+                  // Entire product is OOS
+                  <div className="mt-3">
+                    <WaitlistButton
+                      productId={product.id}
+                      productName={product.name}
+                      variant={selectedVariant || 'Default'}
+                    />
+                  </div>
+                ) : isSelectedVariantOOS ? (
+                  // Specific variant is OOS (user selected it)
                   <>
-                    {variantKeys.length > 0 && (
-                      <div className="mt-3 opacity-50 pointer-events-none">
-                        <select className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm">
-                          {variantKeys.map((key) => (
-                            <option key={key} value={key}>
-                              {key} (0 available)
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
                     <div className="mt-3">
+                      <span className="block text-center text-red-500 font-bold text-sm uppercase tracking-wider border border-red-800 bg-red-900/20 py-1.5 rounded">
+                        Out of Stock
+                      </span>
+                    </div>
+                    <div className="mt-2">
                       <WaitlistButton
                         productId={product.id}
                         productName={product.name}
@@ -136,30 +178,8 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                     </div>
                   </>
                 ) : (
-                  // In Stock / Pre-Order State
+                  // In Stock
                   <>
-                    {variantKeys.length > 0 && (
-                      <div className="mt-3">
-                        <select
-                          value={selectedVariant}
-                          onChange={(e) => setSelectedVariant(e.target.value)}
-                          className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
-                        >
-                          {variantKeys.map((key) => {
-                            const extra = product.variants_json[key] || 0
-                            return (
-                              <option key={key} value={key}>
-                                {key} {isService ? `(+$${(extra / 100).toFixed(2)})` : `(${extra} in stock)`}
-                              </option>
-                            )
-                          })}
-                        </select>
-                        <p className="text-gray-500 text-xs mt-1">
-                          {isService ? 'Select a package option' : 'Select a size'}
-                        </p>
-                      </div>
-                    )}
-
                     <div className="mt-3 flex items-center gap-3">
                       <button
                         onClick={() => setQuantity(Math.max(1, quantity - 1))}

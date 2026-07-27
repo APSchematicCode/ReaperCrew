@@ -38,7 +38,17 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   const variantKeys = product?.variants_json ? Object.keys(product.variants_json) : []
   const isService = product?.product_type === 'service'
   const images = product?.images_json || []
-  const isOutOfStock = product?.out_of_stock === true
+  const isGloballyOutOfStock = product?.out_of_stock === true
+  const allVariantsOOS = variantKeys.every(key => (product?.variants_json?.[key] || 0) <= 0)
+  const selectedVariantStock = selectedVariant ? (product?.variants_json?.[selectedVariant] || 0) : 0
+  const isSelectedVariantOOS = selectedVariantStock <= 0
+
+  // Auto-select first variant on load
+  useEffect(() => {
+    if (variantKeys.length > 0 && !selectedVariant) {
+      setSelectedVariant(variantKeys[0])
+    }
+  }, [variantKeys, selectedVariant])
 
   const updateHeight = useCallback(() => {
     if (!emblaApi || !containerRef.current || !product) return
@@ -156,17 +166,17 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             <p className="text-3xl font-bold text-white mb-2">${(product.price / 100).toFixed(2)}</p>
 
             <div className="flex flex-wrap gap-2 mb-4">
-              {isOutOfStock ? (
+              {(isGloballyOutOfStock || allVariantsOOS) ? (
                 <span className="text-xs bg-red-900 text-red-300 px-2 py-1 rounded-full uppercase font-semibold">Out of Stock</span>
               ) : isService ? (
                 <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded-full uppercase font-semibold">Custom</span>
               ) : null}
-              {product.is_pre_order && !isOutOfStock && (
+              {product.is_pre_order && !isGloballyOutOfStock && !allVariantsOOS && (
                 <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full uppercase font-semibold">Pre-Order</span>
               )}
             </div>
 
-            {product.is_pre_order && product.estimated_ship_date && !isOutOfStock && (
+            {product.is_pre_order && product.estimated_ship_date && !isGloballyOutOfStock && !allVariantsOOS && (
               <p className="text-sm text-gray-400 mb-3">Will start shipping {product.estimated_ship_date}</p>
             )}
 
@@ -174,56 +184,57 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
               {product.description || 'No description provided.'}
             </p>
 
-            {isOutOfStock ? (
-              // Out of Stock State
+            {/* ✅ DROPDOWN: All variants selectable */}
+            {variantKeys.length > 0 && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  {isService ? 'Select Package' : 'Select Size'}
+                </label>
+                <select
+                  value={selectedVariant}
+                  onChange={(e) => setSelectedVariant(e.target.value)}
+                  className={`w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500 ${
+                    isGloballyOutOfStock ? 'opacity-50 pointer-events-none' : ''
+                  }`}
+                  disabled={isGloballyOutOfStock}
+                >
+                  {variantKeys.map((key) => {
+                    const stock = product.variants_json[key] || 0
+                    const isOOS = stock <= 0
+                    return (
+                      <option key={key} value={key} className={isOOS ? 'text-red-400' : 'text-white'}>
+                        {key} {isService ? `(+$${(stock / 100).toFixed(2)})` : isOOS ? '(Out of Stock)' : `(${stock} in stock)`}
+                      </option>
+                    )
+                  })}
+                </select>
+              </div>
+            )}
+
+            {/* ✅ RENDER LOGIC: Show Waitlist for OOS variant, Add to Cart for In Stock */}
+            {(isGloballyOutOfStock || allVariantsOOS) ? (
+              <div className="mt-2">
+                <WaitlistButton
+                  productId={product.id}
+                  productName={product.name}
+                  variant={selectedVariant || 'Default'}
+                />
+              </div>
+            ) : isSelectedVariantOOS ? (
               <>
-                {variantKeys.length > 0 && (
-                  <div className="mb-4 opacity-50 pointer-events-none">
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                      {isService ? 'Select Package' : 'Select Size'}
-                    </label>
-                    <select className="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white">
-                      {variantKeys.map((key) => (
-                        <option key={key} value={key}>
-                          {key} (0 available)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                <div className="mt-2">
-                  <WaitlistButton
-                    productId={product.id}
-                    productName={product.name}
-                    variant={selectedVariant || 'Default'}
-                  />
+                <div className="mb-3">
+                  <span className="block text-center text-red-500 font-bold text-sm uppercase tracking-wider border border-red-800 bg-red-900/20 py-2 rounded">
+                    Out of Stock
+                  </span>
                 </div>
+                <WaitlistButton
+                  productId={product.id}
+                  productName={product.name}
+                  variant={selectedVariant || 'Default'}
+                />
               </>
             ) : (
-              // In Stock / Pre-Order State
               <>
-                {variantKeys.length > 0 && (
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                      {isService ? 'Select Package' : 'Select Size'}
-                    </label>
-                    <select
-                      value={selectedVariant}
-                      onChange={(e) => setSelectedVariant(e.target.value)}
-                      className="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
-                    >
-                      {variantKeys.map((key) => {
-                        const extra = product.variants_json[key] || 0
-                        return (
-                          <option key={key} value={key}>
-                            {key} {isService ? `(+$${(extra / 100).toFixed(2)})` : `(${extra} in stock)`}
-                          </option>
-                        )
-                      })}
-                    </select>
-                  </div>
-                )}
-
                 <div className="flex items-center gap-3 mb-4">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}

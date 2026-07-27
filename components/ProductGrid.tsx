@@ -16,7 +16,8 @@ type Product = {
   estimated_ship_date?: string
   images_json: string[]
   variants_json: any
-  image_metadata?: Record<string, { width: number; height: number }>  // ✅ Added
+  image_metadata?: Record<string, { width: number; height: number }>
+  out_of_stock?: boolean
 }
 
 export default function ProductGrid({ products }: { products: Product[] }) {
@@ -32,11 +33,9 @@ export default function ProductGrid({ products }: { products: Product[] }) {
     let finalPrice = product.price
     const isService = product.product_type === 'service'
     const variantExtra = product.variants_json?.[variantKey] || 0
-
     if (isService && variantExtra > 0) {
       finalPrice = product.price + variantExtra
     }
-
     addItem({
       id: product.id,
       name: product.name,
@@ -57,6 +56,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
           const [selectedVariant, setSelectedVariant] = useState<string>(variantKeys[0] || '')
           const [quantity, setQuantity] = useState<number>(1)
           const isService = product.product_type === 'service'
+          const isOutOfStock = product.out_of_stock === true
 
           return (
             <div key={product.id} className="bg-gray-900 rounded-lg overflow-hidden border border-gray-800 hover:border-gray-600 transition group flex flex-col">
@@ -100,67 +100,90 @@ export default function ProductGrid({ products }: { products: Product[] }) {
 
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-lg font-bold text-white">${(product.price / 100).toFixed(2)}</span>
-                  {product.is_pre_order && (
+                  {isOutOfStock ? (
+                    <span className="text-xs bg-red-900 text-red-300 px-2 py-1 rounded-full uppercase font-semibold">Out of Stock</span>
+                  ) : product.is_pre_order ? (
                     <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full uppercase font-semibold">Pre-Order</span>
-                  )}
-                  {isService && (
+                  ) : isService ? (
                     <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded-full uppercase font-semibold">Custom</span>
-                  )}
+                  ) : null}
                 </div>
 
-                {product.is_pre_order && product.estimated_ship_date && (
+                {product.is_pre_order && product.estimated_ship_date && !isOutOfStock && (
                   <p className="text-xs text-gray-400 mt-2">Will start shipping {product.estimated_ship_date}</p>
                 )}
 
-                {variantKeys.length > 0 && (
-                  <div className="mt-3">
-                    <select
-                      value={selectedVariant}
-                      onChange={(e) => setSelectedVariant(e.target.value)}
-                      className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
+                {isOutOfStock ? (
+                  // Out of Stock State
+                  <>
+                    {variantKeys.length > 0 && (
+                      <div className="mt-3 opacity-50 pointer-events-none">
+                        <select className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm">
+                          {variantKeys.map((key) => (
+                            <option key={key} value={key}>
+                              {key} (0 available)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    <div className="mt-3">
+                      <WaitlistButton
+                        productId={product.id}
+                        productName={product.name}
+                        variant={selectedVariant || 'Default'}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  // In Stock / Pre-Order State
+                  <>
+                    {variantKeys.length > 0 && (
+                      <div className="mt-3">
+                        <select
+                          value={selectedVariant}
+                          onChange={(e) => setSelectedVariant(e.target.value)}
+                          className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
+                        >
+                          {variantKeys.map((key) => {
+                            const extra = product.variants_json[key] || 0
+                            return (
+                              <option key={key} value={key}>
+                                {key} {isService ? `(+$${(extra / 100).toFixed(2)})` : `(${extra} in stock)`}
+                              </option>
+                            )
+                          })}
+                        </select>
+                        <p className="text-gray-500 text-xs mt-1">
+                          {isService ? 'Select a package option' : 'Select a size'}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="mt-3 flex items-center gap-3">
+                      <button
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center"
+                      >
+                        -
+                      </button>
+                      <span className="text-white w-8 text-center">{quantity}</span>
+                      <button
+                        onClick={() => setQuantity(quantity + 1)}
+                        className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => handleAddToCart(product, selectedVariant, quantity)}
+                      className="mt-3 w-full bg-white text-black py-2 rounded hover:bg-gray-200 transition font-medium text-sm"
                     >
-                      {variantKeys.map((key) => {
-                        const extra = product.variants_json[key] || 0
-                        return (
-                          <option key={key} value={key}>
-                            {key} {isService ? `(+$${(extra / 100).toFixed(2)})` : `(${extra} in stock)`}
-                          </option>
-                        )
-                      })}
-                    </select>
-                    <p className="text-gray-500 text-xs mt-1">
-                      {isService ? 'Select a package option' : 'Select a size'}
-                    </p>
-                  </div>
+                      Add to Cart
+                    </button>
+                  </>
                 )}
-
-                <div className="mt-3 flex items-center gap-3">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center"
-                  >
-                    -
-                  </button>
-                  <span className="text-white w-8 text-center">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center"
-                  >
-                    +
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => handleAddToCart(product, selectedVariant, quantity)}
-                  className="mt-3 w-full bg-white text-black py-2 rounded hover:bg-gray-200 transition font-medium text-sm"
-                >
-                  Add to Cart
-                </button>
-                <WaitlistButton
-  productId={product.id}
-  productName={product.name}
-  variant={selectedVariant || 'Default'}
-/>
               </div>
             </div>
           )

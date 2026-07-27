@@ -26,6 +26,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
   const [error, setError] = useState('')
   const [uploadProgress, setUploadProgress] = useState('')
   const [imageMetadata, setImageMetadata] = useState<ImageMetadata>({})
+  const [outOfStock, setOutOfStock] = useState(false) // ✅ New state
 
   if (!isOpen) return null
 
@@ -34,7 +35,6 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
       const newFiles = Array.from(e.target.files)
       setFiles(newFiles)
 
-      // Read dimensions for each file
       const metadata: ImageMetadata = {}
       newFiles.forEach((file) => {
         const reader = new FileReader()
@@ -80,7 +80,6 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
       const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(filePath)
       uploadedUrls.push(publicUrl)
 
-      // Store metadata using URL as key
       if (imageMetadata[file.name]) {
         metadata[publicUrl] = imageMetadata[file.name]
       }
@@ -133,6 +132,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
       variants_json: variantsJson,
       popularity: popularity,
       image_metadata: metadata,
+      out_of_stock: outOfStock, // ✅ Added
     })
 
     if (insertError) {
@@ -154,6 +154,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
     setVariants([])
     setPopularity(0)
     setImageMetadata({})
+    setOutOfStock(false)
   }
 
   const isService = productType === 'service'
@@ -238,6 +239,18 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
                 ))}
               </div>
             )}
+          </div>
+
+          {/* ✅ Out of Stock Checkbox */}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="outOfStock"
+              checked={outOfStock}
+              onChange={(e) => setOutOfStock(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <label htmlFor="outOfStock" className="text-sm text-gray-300">Mark as Out of Stock</label>
           </div>
 
           <div className="flex items-center gap-2">

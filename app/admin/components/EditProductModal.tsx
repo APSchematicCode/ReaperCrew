@@ -19,6 +19,7 @@ interface EditProductModalProps {
     variants_json?: any
     popularity?: number
     image_metadata?: Record<string, { width: number; height: number }>
+    out_of_stock?: boolean // ✅ Added
   } | null
 }
 
@@ -38,6 +39,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [imageMetadata, setImageMetadata] = useState<ImageMetadata>({})
+  const [outOfStock, setOutOfStock] = useState(false) // ✅ New state
 
   const isService = productType === 'service'
 
@@ -52,6 +54,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
       setExistingImages(product.images_json || [])
       setPopularity(product.popularity || 0)
       setImageMetadata(product.image_metadata || {})
+      setOutOfStock(product.out_of_stock || false) // ✅ Load existing value
 
       if (product.variants_json) {
         const entries = Object.entries(product.variants_json)
@@ -69,7 +72,6 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
       const newFilesArray = Array.from(e.target.files)
       setNewFiles(newFilesArray)
 
-      // Read dimensions for each new file
       const metadata: ImageMetadata = {}
       newFilesArray.forEach((file) => {
         const reader = new FileReader()
@@ -88,7 +90,6 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
 
   const removeExistingImage = (urlToRemove: string) => {
     setExistingImages(existingImages.filter(url => url !== urlToRemove))
-    // Also remove its metadata
     const newMetadata = { ...imageMetadata }
     delete newMetadata[urlToRemove]
     setImageMetadata(newMetadata)
@@ -175,6 +176,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
         variants_json: variantsJson,
         popularity: popularity,
         image_metadata: finalMetadata,
+        out_of_stock: outOfStock, // ✅ Added
       })
       .eq('id', product.id)
 
@@ -251,7 +253,6 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
             <p className="text-gray-500 text-xs mt-1">{isService ? 'Extra price added to base price.' : 'Stock quantity for this size.'}</p>
           </div>
 
-          {/* Existing Images with metadata display */}
           {existingImages.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Current Images</label>
@@ -280,7 +281,6 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
             </div>
           )}
 
-          {/* New Images with preview and metadata */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Add New Images</label>
             <input type="file" accept="image/*" multiple onChange={handleFileChange} className="w-full text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-gray-800 file:text-white hover:file:bg-gray-700" />
@@ -301,6 +301,18 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
                 })}
               </div>
             )}
+          </div>
+
+          {/* ✅ Out of Stock Checkbox */}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="outOfStock"
+              checked={outOfStock}
+              onChange={(e) => setOutOfStock(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <label htmlFor="outOfStock" className="text-sm text-gray-300">Mark as Out of Stock</label>
           </div>
 
           <div className="flex items-center gap-2">

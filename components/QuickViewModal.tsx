@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import Image from 'next/image'
 import { useCart } from '@/context/CartContext'
+import WaitlistButton from './WaitlistButton'
 
 type Product = {
   id: string
@@ -15,7 +16,8 @@ type Product = {
   estimated_ship_date?: string
   images_json: string[]
   variants_json: any
-  image_metadata?: Record<string, { width: number; height: number }> // ✅ Made optional
+  image_metadata?: Record<string, { width: number; height: number }>
+  out_of_stock?: boolean
 }
 
 interface QuickViewModalProps {
@@ -36,12 +38,13 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   const variantKeys = product?.variants_json ? Object.keys(product.variants_json) : []
   const isService = product?.product_type === 'service'
   const images = product?.images_json || []
+  const isOutOfStock = product?.out_of_stock === true
 
   const updateHeight = useCallback(() => {
     if (!emblaApi || !containerRef.current || !product) return
     const index = emblaApi.selectedScrollSnap()
     const imageUrl = images[index]
-    const metadata = product.image_metadata?.[imageUrl] // ✅ Safe access with optional chaining
+    const metadata = product.image_metadata?.[imageUrl]
 
     if (metadata && metadata.width && metadata.height) {
       const containerWidth = containerRef.current.clientWidth
@@ -153,11 +156,17 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             <p className="text-3xl font-bold text-white mb-2">${(product.price / 100).toFixed(2)}</p>
 
             <div className="flex flex-wrap gap-2 mb-4">
-              {isService && <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded-full uppercase font-semibold">Custom</span>}
-              {product.is_pre_order && <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full uppercase font-semibold">Pre-Order</span>}
+              {isOutOfStock ? (
+                <span className="text-xs bg-red-900 text-red-300 px-2 py-1 rounded-full uppercase font-semibold">Out of Stock</span>
+              ) : isService ? (
+                <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded-full uppercase font-semibold">Custom</span>
+              ) : null}
+              {product.is_pre_order && !isOutOfStock && (
+                <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full uppercase font-semibold">Pre-Order</span>
+              )}
             </div>
 
-            {product.is_pre_order && product.estimated_ship_date && (
+            {product.is_pre_order && product.estimated_ship_date && !isOutOfStock && (
               <p className="text-sm text-gray-400 mb-3">Will start shipping {product.estimated_ship_date}</p>
             )}
 
@@ -165,38 +174,84 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
               {product.description || 'No description provided.'}
             </p>
 
-            {variantKeys.length > 0 && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  {isService ? 'Select Package' : 'Select Size'}
-                </label>
-                <select
-                  value={selectedVariant}
-                  onChange={(e) => setSelectedVariant(e.target.value)}
-                  className="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
+            {isOutOfStock ? (
+              // Out of Stock State
+              <>
+                {variantKeys.length > 0 && (
+                  <div className="mb-4 opacity-50 pointer-events-none">
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      {isService ? 'Select Package' : 'Select Size'}
+                    </label>
+                    <select className="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white">
+                      {variantKeys.map((key) => (
+                        <option key={key} value={key}>
+                          {key} (0 available)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className="mt-2">
+                  <WaitlistButton
+                    productId={product.id}
+                    productName={product.name}
+                    variant={selectedVariant || 'Default'}
+                  />
+                </div>
+              </>
+            ) : (
+              // In Stock / Pre-Order State
+              <>
+                {variantKeys.length > 0 && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      {isService ? 'Select Package' : 'Select Size'}
+                    </label>
+                    <select
+                      value={selectedVariant}
+                      onChange={(e) => setSelectedVariant(e.target.value)}
+                      className="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
+                    >
+                      {variantKeys.map((key) => {
+                        const extra = product.variants_json[key] || 0
+                        return (
+                          <option key={key} value={key}>
+                            {key} {isService ? `(+$${(extra / 100).toFixed(2)})` : `(${extra} in stock)`}
+                          </option>
+                        )
+                      })}
+                    </select>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 mb-4">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center"
+                  >
+                    -
+                  </button>
+                  <span className="text-white w-8 text-center">{quantity}</span>
+                  <button
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center"
+                  >
+                    +
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleAddToCart}
+                  className="w-full bg-white text-black py-3 rounded-lg font-semibold hover:bg-gray-200 transition"
                 >
-                  {variantKeys.map((key) => {
-                    const extra = product.variants_json[key] || 0
-                    return (
-                      <option key={key} value={key}>
-                        {key} {isService ? `(+$${(extra / 100).toFixed(2)})` : `(${extra} in stock)`}
-                      </option>
-                    )
-                  })}
-                </select>
-              </div>
+                  Add to Cart
+                </button>
+              </>
             )}
 
-            <div className="flex items-center gap-3 mb-4">
-              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center">-</button>
-              <span className="text-white w-8 text-center">{quantity}</span>
-              <button onClick={() => setQuantity(quantity + 1)} className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center">+</button>
-            </div>
-
-            <button onClick={handleAddToCart} className="w-full bg-white text-black py-3 rounded-lg font-semibold hover:bg-gray-200 transition">
-              Add to Cart
-            </button>
-            <p className="text-xs text-gray-500 text-center mt-3">{images.length} image{images.length !== 1 ? 's' : ''}</p>
+            <p className="text-xs text-gray-500 text-center mt-3">
+              {images.length} image{images.length !== 1 ? 's' : ''}
+            </p>
           </div>
         </div>
       </div>

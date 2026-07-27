@@ -12,14 +12,17 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-black/90 backdrop-blur-sm border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
+          {/* Logo */}
           <Link href="/" className="text-3xl font-unifraktur tracking-wider text-white hover:text-gray-300 transition">
             Reaper Crew
           </Link>
 
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
             <Link href="/shop" className="text-gray-300 hover:text-white transition">Shop</Link>
             <Link href="/about" className="text-gray-300 hover:text-white transition">About</Link>
             <Link href="/contact" className="text-gray-300 hover:text-white transition">Contact</Link>
+            <Link href="/account" className="text-gray-300 hover:text-white transition">Account</Link>
             <Link href="/cart" className="text-gray-300 hover:text-white transition flex items-center gap-1">
               Cart
               {totalItems > 0 && (
@@ -30,6 +33,7 @@ export default function Header() {
             </Link>
           </nav>
 
+          {/* Mobile: Hamburger + Badge */}
           <div className="md:hidden flex items-center gap-2 relative">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -62,6 +66,7 @@ export default function Header() {
             <Link href="/shop" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Shop</Link>
             <Link href="/about" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>About</Link>
             <Link href="/contact" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Contact</Link>
+            <Link href="/account" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Account</Link>
             <Link href="/cart" className="block text-xl text-gray-300 hover:text-white transition items-center gap-2" onClick={() => setIsMenuOpen(false)}>
               Cart
               {totalItems > 0 && (
@@ -72,7 +77,7 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* ✅ Only Instagram & YouTube */}
+          {/* Socials (Only Instagram & YouTube) */}
           <div className="p-6 pt-4 border-t border-gray-700">
             <p className="text-gray-400 text-xs uppercase tracking-wider mb-3">Follow Us</p>
             <div className="flex gap-5">

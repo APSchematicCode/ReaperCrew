@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export type CartItem = {
   id: string;
@@ -23,39 +24,63 @@ type CartContextType = {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+// Helper to get the current user ID (or 'guest')
+const getCartKey = async (): Promise<string> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ? `cart-${user.id}` : 'cart-guest';
+};
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [cartKey, setCartKey] = useState<string>('cart-guest');
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load cart from localStorage on mount
+  // Load cart when key changes
   useEffect(() => {
-    const saved = localStorage.getItem('cart');
-    if (saved) {
-      try {
-        setItems(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to parse cart', e);
+    const loadCart = async () => {
+      const key = await getCartKey();
+      setCartKey(key);
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        try {
+          setItems(JSON.parse(saved));
+        } catch (e) {
+          console.error('Failed to parse cart', e);
+        }
+      } else {
+        setItems([]);
       }
-    }
+      setIsLoading(false);
+    };
+    loadCart();
+
+    // Listen to auth changes (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      loadCart();
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Save to localStorage whenever items change
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(items));
-  }, [items]);
+    if (!isLoading) {
+      localStorage.setItem(cartKey, JSON.stringify(items));
+    }
+  }, [items, cartKey, isLoading]);
 
   const addItem = (newItem: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
     setItems(prev => {
       const existingIndex = prev.findIndex(
         item => item.id === newItem.id && item.variant === newItem.variant
       );
-
       if (existingIndex > -1) {
-        // Increase quantity
         const updated = [...prev];
         updated[existingIndex].quantity += newItem.quantity || 1;
         return updated;
       } else {
-        // Add new item
         return [...prev, { ...newItem, quantity: newItem.quantity || 1 }];
       }
     });

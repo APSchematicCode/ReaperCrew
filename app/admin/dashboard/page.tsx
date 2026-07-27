@@ -10,6 +10,7 @@ import ProductSortableList from '../components/ProductSortableList'
 import OrdersList from '../components/OrdersList'
 import ReviewsList from '../components/ReviewsList'
 import WaitlistList from '../components/WaitlistList'
+import CouponManager from '../components/CouponManager'
 
 export const revalidate = 0
 
@@ -115,6 +116,14 @@ export default async function AdminDashboard() {
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
           <ReviewsList />
         </div>
+
+        {/* COUPONS */}
+        <h2 className="text-2xl font-unifraktur text-white mb-4 mt-12">Discount Codes</h2>
+        <p className="text-gray-400 text-sm mb-4">Create and manage coupon codes for promotions.</p>
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+          <CouponManager />
+        </div>
+
       </div>
     </main>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 
 export type CartItem = {
@@ -24,50 +24,127 @@ type CartContextType = {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// Helper to get the current user ID (or 'guest')
+const GUEST_KEY = 'cart-guest';
+
 const getCartKey = async (): Promise<string> => {
   const { data: { user } } = await supabase.auth.getUser();
-  return user?.id ? `cart-${user.id}` : 'cart-guest';
+  return user?.id ? `cart-${user.id}` : GUEST_KEY;
 };
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [cartKey, setCartKey] = useState<string>('cart-guest');
+  const [cartKey, setCartKey] = useState<string>(GUEST_KEY);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load cart when key changes
+  // Refs to hold the latest values for the auth listener
+  const itemsRef = useRef(items);
+  const cartKeyRef = useRef(cartKey);
+
   useEffect(() => {
-    const loadCart = async () => {
-      const key = await getCartKey();
-      setCartKey(key);
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        try {
-          setItems(JSON.parse(saved));
-        } catch (e) {
-          console.error('Failed to parse cart', e);
-        }
-      } else {
+    itemsRef.current = items;
+  }, [items]);
+
+  useEffect(() => {
+    cartKeyRef.current = cartKey;
+  }, [cartKey]);
+
+  const loadCart = async () => {
+    const key = await getCartKey();
+    setCartKey(key);
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      try {
+        setItems(JSON.parse(saved));
+      } catch (e) {
+        console.error('Failed to parse cart', e);
         setItems([]);
       }
-      setIsLoading(false);
-    };
-    loadCart();
+    } else {
+      setItems([]);
+    }
+    setIsLoading(false);
+  };
 
-    // Listen to auth changes (login/logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      loadCart();
+  // Initial load
+  useEffect(() => {
+    loadCart();
+  }, []);
+
+  // Auth listener
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        // 1. Save current items to the user's specific key (so they persist for next login)
+        const currentKey = cartKeyRef.current;
+        const currentItems = itemsRef.current;
+        if (currentKey !== GUEST_KEY && currentItems.length > 0) {
+          localStorage.setItem(currentKey, JSON.stringify(currentItems));
+        }
+        // 2. Remove the guest cart entirely
+        localStorage.removeItem(GUEST_KEY);
+        // 3. Force the cart to be EMPTY for the guest session
+        setItems([]);
+        setCartKey(GUEST_KEY);
+      } 
+      else if (event === 'SIGNED_IN' && session?.user?.id) {
+        const userKey = `cart-${session.user.id}`;
+        let mergedItems: CartItem[] = [];
+
+        // A) Load guest cart
+        const guestRaw = localStorage.getItem(GUEST_KEY);
+        if (guestRaw) {
+          try {
+            mergedItems = JSON.parse(guestRaw);
+          } catch (e) { /* ignore */ }
+        }
+
+        // B) Load user cart
+        const userRaw = localStorage.getItem(userKey);
+        if (userRaw) {
+          try {
+            const userItems = JSON.parse(userRaw);
+            // Merge: if id+variant exists in mergedItems, add quantity, else push
+            userItems.forEach((userItem: CartItem) => {
+              const existing = mergedItems.find(
+                (item) => item.id === userItem.id && item.variant === userItem.variant
+              );
+              if (existing) {
+                existing.quantity += userItem.quantity;
+              } else {
+                mergedItems.push(userItem);
+              }
+            });
+          } catch (e) { /* ignore */ }
+        }
+
+        // C) Clear guest cart (we've merged it)
+        localStorage.removeItem(GUEST_KEY);
+        // D) Save merged to user key
+        if (mergedItems.length > 0) {
+          localStorage.setItem(userKey, JSON.stringify(mergedItems));
+        } else {
+          localStorage.removeItem(userKey);
+        }
+
+        // E) Update state
+        setItems(mergedItems);
+        setCartKey(userKey);
+      }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, []); // Empty dependency array ensures listener is only set up once
 
-  // Save to localStorage whenever items change
+  // Save to localStorage whenever items change (only for the current key)
   useEffect(() => {
     if (!isLoading) {
-      localStorage.setItem(cartKey, JSON.stringify(items));
+      if (items.length === 0) {
+        localStorage.removeItem(cartKey);
+      } else {
+        localStorage.setItem(cartKey, JSON.stringify(items));
+      }
     }
   }, [items, cartKey, isLoading]);
 

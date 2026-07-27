@@ -38,7 +38,7 @@ export default function CouponManager() {
     e.preventDefault()
     const form = e.currentTarget
     const formData = new FormData(form)
-    const code = formData.get('code') as string
+    const code = (formData.get('code') as string).toUpperCase()
     const type = formData.get('type') as string
     const value = parseInt(formData.get('value') as string)
     const expires_at = formData.get('expires_at') as string || null
@@ -64,31 +64,65 @@ export default function CouponManager() {
   return (
     <div className="space-y-6">
       {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-gray-800 p-4 rounded-lg border border-gray-700 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
-        <div>
+      <form onSubmit={handleSubmit} className="bg-gray-800 p-4 rounded-lg border border-gray-700 grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+        {/* Code */}
+        <div className="md:col-span-1">
           <label className="text-xs text-gray-400">Code *</label>
-          <input name="code" defaultValue={editing?.code || ''} onChange={(e) => (e.target.value = e.target.value.toUpperCase())} required className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500" />
+          <input
+            name="code"
+            defaultValue={editing?.code || ''}
+            onChange={(e) => (e.target.value = e.target.value.toUpperCase())}
+            required
+            className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
+          />
         </div>
-        <div>
+        {/* Type */}
+        <div className="md:col-span-1">
           <label className="text-xs text-gray-400">Type</label>
-          <select name="type" defaultValue={editing?.type || 'percentage'} className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500">
+          <select
+            name="type"
+            defaultValue={editing?.type || 'percentage'}
+            className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
+          >
             <option value="percentage">Percentage</option>
             <option value="fixed">Fixed ($)</option>
           </select>
         </div>
-        <div>
+        {/* Value */}
+        <div className="md:col-span-1">
           <label className="text-xs text-gray-400">Value *</label>
-          <input name="value" type="number" step={editing?.type === 'percentage' ? '1' : '0.01'} defaultValue={editing?.value || ''} required className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500" />
+          <input
+            name="value"
+            type="number"
+            step={editing?.type === 'percentage' ? '1' : '0.01'}
+            defaultValue={editing?.value || ''}
+            required
+            className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
+          />
         </div>
-        <div>
+        {/* Expires At – Shortened width, visible icon */}
+        <div className="md:col-span-2">
           <label className="text-xs text-gray-400">Expires (Optional)</label>
-          <input name="expires_at" type="datetime-local" defaultValue={editing?.expires_at?.slice(0, 16) || ''} className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500" />
+          <input
+            name="expires_at"
+            type="datetime-local"
+            defaultValue={editing?.expires_at?.slice(0, 16) || ''}
+            style={{ colorScheme: 'dark' }}
+            className="w-full max-w-250px px-6 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:saturate-100"
+          />
         </div>
-        <div>
+        {/* Limit */}
+        <div className="md:col-span-1">
           <label className="text-xs text-gray-400">Limit</label>
-          <input name="usage_limit" type="number" defaultValue={editing?.usage_limit || 0} className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500" />
+          <input
+            name="usage_limit"
+            type="number"
+            defaultValue={editing?.usage_limit || 0}
+            className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
+          />
         </div>
-        <div className="md:col-span-5 flex gap-3">
+        {/* Buttons - Full Width */}
+        <div className="md:col-span-6 flex gap-3">
           <button type="submit" className="bg-white text-black px-4 py-1.5 rounded font-medium hover:bg-gray-200 transition">
             {editing ? 'Update' : 'Create'}
           </button>

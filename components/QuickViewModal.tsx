@@ -15,7 +15,7 @@ type Product = {
   estimated_ship_date?: string
   images_json: string[]
   variants_json: any
-  image_metadata: Record<string, { width: number; height: number }>
+  image_metadata?: Record<string, { width: number; height: number }> // ✅ Made optional
 }
 
 interface QuickViewModalProps {
@@ -41,15 +41,14 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
     if (!emblaApi || !containerRef.current || !product) return
     const index = emblaApi.selectedScrollSnap()
     const imageUrl = images[index]
-    const metadata = product.image_metadata?.[imageUrl]
-    
+    const metadata = product.image_metadata?.[imageUrl] // ✅ Safe access with optional chaining
+
     if (metadata && metadata.width && metadata.height) {
       const containerWidth = containerRef.current.clientWidth
       const aspectRatio = metadata.width / metadata.height
       const calculatedHeight = containerWidth / aspectRatio
       setContainerHeight(calculatedHeight)
     } else {
-      // Fallback: default height if no metadata
       setContainerHeight(400)
     }
   }, [emblaApi, images, product])
@@ -119,7 +118,6 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
         </button>
 
         <div className="grid grid-cols-1 md:grid-cols-2 h-full">
-          {/* Dynamic Image Container */}
           <div
             ref={containerRef}
             className="relative bg-black overflow-hidden transition-[height] duration-500 ease-in-out"

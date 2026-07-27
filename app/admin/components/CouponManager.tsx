@@ -101,7 +101,7 @@ export default function CouponManager() {
           />
         </div>
         {/* Expires At – Shortened width, visible icon */}
-        <div className="md:col-span-2">
+        <div className="md:col-span-1">
           <label className="text-xs text-gray-400">Expires (Optional)</label>
           <input
             name="expires_at"

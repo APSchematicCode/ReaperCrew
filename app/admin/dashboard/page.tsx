@@ -7,6 +7,7 @@ import AddSlideButton from '../components/AddSlideButton'
 import SlidesList from '../components/SlidesList'
 import InboxList from '../components/InboxList' 
 import ProductSortableList from '../components/ProductSortableList'
+import OrdersList from '../components/OrdersList'
 
 
 export const revalidate = 0
@@ -48,6 +49,12 @@ export default async function AdminDashboard() {
     .select('*')
     .order('created_at', { ascending: false })
 
+    // Fetch orders
+const { data: orders } = await supabase
+  .from('orders')
+  .select('*')
+  .order('created_at', { ascending: false })
+
   return (
     <main className="min-h-screen bg-black">
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -79,6 +86,13 @@ export default async function AdminDashboard() {
         <p className="text-gray-400 text-sm mb-4">Customer messages from the Contact page.</p>
         <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
           <InboxList inquiries={inquiries || []} />
+        </div>
+
+        {/* ORDERS */}
+        <h2 className="text-2xl font-unifraktur text-white mb-4 mt-12">Orders</h2>
+        <p className="text-gray-400 text-sm mb-4">Manage customer orders and update fulfillment status.</p>
+        <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+          <OrdersList orders={orders || []} />
         </div>
       </div>
     </main>

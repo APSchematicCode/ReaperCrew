@@ -3,6 +3,7 @@
 import { useCart } from '@/context/CartContext'
 import Image from 'next/image'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
 const SHIPPING_FEE_DOLLARS = 14.99
 const SHIPPING_TIME = "2-3 business days"
@@ -104,9 +105,33 @@ export default function CartPage() {
             <button onClick={clearCart} className="text-red-400 hover:text-red-300 text-sm px-4 py-2 border border-red-800 rounded hover:bg-red-900/20 transition flex-1 sm:flex-none">
               Clear Cart
             </button>
-            <button className="bg-white text-black px-6 py-3 rounded font-medium hover:bg-gray-200 transition flex-1 sm:flex-none">
-              Proceed to Checkout
-            </button>
+            <button
+  onClick={async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    const { error } = await supabase.from('orders').insert({
+      user_id: user?.id || null,
+      customer_email: user?.email || 'guest@example.com',
+      customer_name: user?.user_metadata?.name || 'Guest',
+      items_json: items.map(item => ({
+        name: item.name,
+        variant: item.variant,
+        price: item.price,
+        quantity: item.quantity
+      })),
+      total_cents: totalPrice,
+      status: 'pending'
+    })
+    if (error) {
+      alert('Failed to place order: ' + error.message)
+    } else {
+      alert('Order placed! Check the admin dashboard.')
+      clearCart()
+    }
+  }}
+  className="bg-white text-black px-6 py-3 rounded font-medium hover:bg-gray-200 transition flex-1 sm:flex-none"
+>
+  Proceed to Checkout
+</button>
           </div>
         </div>
       </div>

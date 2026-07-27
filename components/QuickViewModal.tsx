@@ -4,7 +4,9 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import Image from 'next/image'
 import { useCart } from '@/context/CartContext'
+import { supabase } from '@/lib/supabase'
 import WaitlistButton from './WaitlistButton'
+import ReviewForm from './ReviewForm'
 
 type Product = {
   id: string
@@ -34,6 +36,8 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   const [containerHeight, setContainerHeight] = useState<number>(400)
   const containerRef = useRef<HTMLDivElement>(null)
   const [isReady, setIsReady] = useState(false)
+  const [reviews, setReviews] = useState<any[]>([])
+  const [reviewSubmitted, setReviewSubmitted] = useState(false)
 
   const variantKeys = product?.variants_json ? Object.keys(product.variants_json) : []
   const isService = product?.product_type === 'service'
@@ -49,6 +53,24 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
       setSelectedVariant(variantKeys[0])
     }
   }, [variantKeys, selectedVariant])
+
+  // Fetch reviews when product changes
+  const fetchReviews = async () => {
+    if (!product) return
+    const { data } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('product_id', product.id)
+      .eq('is_approved', true)
+      .order('created_at', { ascending: false })
+    setReviews(data || [])
+  }
+
+  useEffect(() => {
+    if (product) {
+      fetchReviews()
+    }
+  }, [product])
 
   const updateHeight = useCallback(() => {
     if (!emblaApi || !containerRef.current || !product) return
@@ -120,7 +142,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div className="relative bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="relative bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-3 right-3 z-10 p-1 bg-black/60 rounded-full hover:bg-black/80 transition text-white"
@@ -130,7 +152,8 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
           </svg>
         </button>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 h-full">
+        <div className="grid grid-cols-1 md:grid-cols-2">
+          {/* Image Section */}
           <div
             ref={containerRef}
             className="relative bg-black overflow-hidden transition-[height] duration-500 ease-in-out"
@@ -161,7 +184,8 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             )}
           </div>
 
-          <div className="p-6 flex flex-col">
+          {/* Details Section */}
+          <div className="p-6 flex flex-col max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-unifraktur text-white mb-1">{product.name}</h2>
             <p className="text-3xl font-bold text-white mb-2">${(product.price / 100).toFixed(2)}</p>
 
@@ -184,7 +208,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
               {product.description || 'No description provided.'}
             </p>
 
-            {/* ✅ DROPDOWN: All variants selectable */}
+            {/* Variants Dropdown */}
             {variantKeys.length > 0 && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -211,15 +235,9 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
               </div>
             )}
 
-            {/* ✅ RENDER LOGIC: Show Waitlist for OOS variant, Add to Cart for In Stock */}
+            {/* Action Buttons */}
             {(isGloballyOutOfStock || allVariantsOOS) ? (
-              <div className="mt-2">
-                <WaitlistButton
-                  productId={product.id}
-                  productName={product.name}
-                  variant={selectedVariant || 'Default'}
-                />
-              </div>
+              <WaitlistButton productId={product.id} productName={product.name} variant={selectedVariant || 'Default'} />
             ) : isSelectedVariantOOS ? (
               <>
                 <div className="mb-3">
@@ -227,11 +245,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                     Out of Stock
                   </span>
                 </div>
-                <WaitlistButton
-                  productId={product.id}
-                  productName={product.name}
-                  variant={selectedVariant || 'Default'}
-                />
+                <WaitlistButton productId={product.id} productName={product.name} variant={selectedVariant || 'Default'} />
               </>
             ) : (
               <>
@@ -250,7 +264,6 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                     +
                   </button>
                 </div>
-
                 <button
                   onClick={handleAddToCart}
                   className="w-full bg-white text-black py-3 rounded-lg font-semibold hover:bg-gray-200 transition"
@@ -263,6 +276,46 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             <p className="text-xs text-gray-500 text-center mt-3">
               {images.length} image{images.length !== 1 ? 's' : ''}
             </p>
+
+            {/* ✅ Reviews Section */}
+            <div className="mt-4 pt-4 border-t border-gray-700">
+              {/* Display approved reviews */}
+              {reviews.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-white font-medium mb-2">Reviews ({reviews.length})</h4>
+                  <div className="space-y-3 max-h-40 overflow-y-auto">
+                    {reviews.map((review) => (
+                      <div key={review.id} className="bg-black/30 rounded p-3 border border-gray-800">
+                        <div className="flex items-center gap-2">
+                          <div className="text-yellow-400 text-sm">
+                            {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                          </div>
+                          <span className="text-gray-300 text-sm font-medium">{review.author_name}</span>
+                        </div>
+                        <p className="text-gray-400 text-sm mt-1">{review.text}</p>
+                        {review.image_url && (
+                          <div className="mt-2 relative w-16 h-16 bg-gray-700 rounded overflow-hidden">
+                            <Image src={review.image_url} alt="Review photo" fill className="object-cover" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Review Form */}
+              {!isGloballyOutOfStock && !allVariantsOOS && (
+                <ReviewForm
+                  productId={product.id}
+                  productName={product.name}
+                  onReviewSubmitted={() => {
+                    fetchReviews()
+                    setReviewSubmitted(true)
+                  }}
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>

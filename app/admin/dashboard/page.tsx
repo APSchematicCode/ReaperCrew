@@ -5,11 +5,11 @@ import EditProductButton from '../components/EditProductButton'
 import DeleteProductButton from '../components/DeleteProductButton'
 import AddSlideButton from '../components/AddSlideButton'
 import SlidesList from '../components/SlidesList'
-import InboxList from '../components/InboxList' 
+import InboxList from '../components/InboxList'
 import ProductSortableList from '../components/ProductSortableList'
 import OrdersList from '../components/OrdersList'
+import ReviewsList from '../components/ReviewsList'
 import WaitlistList from '../components/WaitlistList'
-
 
 export const revalidate = 0
 
@@ -44,28 +44,29 @@ export default async function AdminDashboard() {
     .select('*')
     .order('display_order', { ascending: true })
 
-  // ✅ Fetch inquiries (contact form messages)
+  // Fetch inquiries
   const { data: inquiries } = await supabase
     .from('inquiries')
     .select('*')
     .order('created_at', { ascending: false })
 
-    // Fetch orders
-const { data: orders } = await supabase
-  .from('orders')
-  .select('*')
-  .order('created_at', { ascending: false })
+  // Fetch orders
+  const { data: orders } = await supabase
+    .from('orders')
+    .select('*')
+    .order('created_at', { ascending: false })
 
+  // Fetch waitlist
   const { data: waitlist } = await supabase
-  .from('waitlist')
-  .select('*, products(name)')
-  .order('created_at', { ascending: false })
+    .from('waitlist')
+    .select('*, products(name)')
+    .order('created_at', { ascending: false })
 
   return (
     <main className="min-h-screen bg-black">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <h1 className="text-3xl font-unifraktur text-white mb-2">Admin Dashboard</h1>
-        <p className="text-gray-400 mb-8">Manage your products, slides, and customer inquiries.</p>
+        <p className="text-gray-400 mb-8">Manage your products, slides, orders, and customer inquiries.</p>
 
         {/* PRODUCTS */}
         <h2 className="text-2xl font-unifraktur text-white mb-4">Products</h2>
@@ -87,28 +88,34 @@ const { data: orders } = await supabase
           <SlidesList slides={slides || []} />
         </div>
 
-        {/* ✅ INBOX */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4">Inbox</h2>
-        <p className="text-gray-400 text-sm mb-4">Customer messages from the Contact page.</p>
-        <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
-          <InboxList inquiries={inquiries || []} />
-        </div>
-
         {/* ORDERS */}
         <h2 className="text-2xl font-unifraktur text-white mb-4 mt-12">Orders</h2>
         <p className="text-gray-400 text-sm mb-4">Manage customer orders and update fulfillment status.</p>
-        <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+        <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden mb-12">
           <OrdersList orders={orders || []} />
         </div>
 
         {/* WAITLIST */}
         <h2 className="text-2xl font-unifraktur text-white mb-4 mt-12">Waitlist</h2>
         <p className="text-gray-400 text-sm mb-4">Customers who want to be notified when items are back in stock.</p>
-        <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+        <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden mb-12">
           <WaitlistList entries={waitlist || []} />
+        </div>
+
+        {/* INBOX */}
+        <h2 className="text-2xl font-unifraktur text-white mb-4 mt-12">Inbox</h2>
+        <p className="text-gray-400 text-sm mb-4">Customer messages from the Contact page.</p>
+        <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden mb-12">
+          <InboxList inquiries={inquiries || []} />
+        </div>
+
+        {/* ✅ REVIEWS */}
+        <h2 className="text-2xl font-unifraktur text-white mb-4 mt-12">Reviews</h2>
+        <p className="text-gray-400 text-sm mb-4">Approve or delete customer reviews.</p>
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+          <ReviewsList />
         </div>
       </div>
     </main>
   )
 }
-

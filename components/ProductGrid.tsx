@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import QuickViewModal from './QuickViewModal'
 import { useCart } from '@/context/CartContext'
+import WaitlistButton from './WaitlistButton'
 
 type Product = {
   id: string
@@ -155,6 +156,11 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                 >
                   Add to Cart
                 </button>
+                <WaitlistButton
+  productId={product.id}
+  productName={product.name}
+  variant={selectedVariant || 'Default'}
+/>
               </div>
             </div>
           )

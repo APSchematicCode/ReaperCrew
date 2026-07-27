@@ -8,6 +8,7 @@ import SlidesList from '../components/SlidesList'
 import InboxList from '../components/InboxList' 
 import ProductSortableList from '../components/ProductSortableList'
 import OrdersList from '../components/OrdersList'
+import WaitlistList from '../components/WaitlistList'
 
 
 export const revalidate = 0
@@ -55,6 +56,11 @@ const { data: orders } = await supabase
   .select('*')
   .order('created_at', { ascending: false })
 
+  const { data: waitlist } = await supabase
+  .from('waitlist')
+  .select('*, products(name)')
+  .order('created_at', { ascending: false })
+
   return (
     <main className="min-h-screen bg-black">
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -93,6 +99,13 @@ const { data: orders } = await supabase
         <p className="text-gray-400 text-sm mb-4">Manage customer orders and update fulfillment status.</p>
         <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
           <OrdersList orders={orders || []} />
+        </div>
+
+        {/* WAITLIST */}
+        <h2 className="text-2xl font-unifraktur text-white mb-4 mt-12">Waitlist</h2>
+        <p className="text-gray-400 text-sm mb-4">Customers who want to be notified when items are back in stock.</p>
+        <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+          <WaitlistList entries={waitlist || []} />
         </div>
       </div>
     </main>

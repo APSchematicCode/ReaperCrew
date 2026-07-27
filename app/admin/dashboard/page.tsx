@@ -5,7 +5,11 @@ import EditProductButton from '../components/EditProductButton'
 import DeleteProductButton from '../components/DeleteProductButton'
 import AddSlideButton from '../components/AddSlideButton'
 import SlidesList from '../components/SlidesList'
+import InboxList from '../components/InboxList' 
 import ProductSortableList from '../components/ProductSortableList'
+
+
+export const revalidate = 0
 
 export default async function AdminDashboard() {
   const supabase = await createServerSupabaseClient()
@@ -32,39 +36,52 @@ export default async function AdminDashboard() {
     .order('display_order', { ascending: true })
     .order('created_at', { ascending: false })
 
-  // Fetch slides (ordered by display_order)
+  // Fetch slides
   const { data: slides } = await supabase
     .from('slides')
     .select('*')
     .order('display_order', { ascending: true })
 
+  // ✅ Fetch inquiries (contact form messages)
+  const { data: inquiries } = await supabase
+    .from('inquiries')
+    .select('*')
+    .order('created_at', { ascending: false })
+
   return (
     <main className="min-h-screen bg-black">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <h1 className="text-3xl font-unifraktur text-white mb-2">Admin Dashboard</h1>
-        <p className="text-gray-400 mb-8">Manage your products and slides.</p>
+        <p className="text-gray-400 mb-8">Manage your products, slides, and customer inquiries.</p>
 
-        {/* ========== PRODUCTS SECTION ========== */}
+        {/* PRODUCTS */}
         <h2 className="text-2xl font-unifraktur text-white mb-4">Products</h2>
-        <div className="mb-8">
+        <div className="mb-4">
           <AddProductButtonWrapper />
         </div>
-
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 md:p-6">
+        <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden mb-12">
+          <div className="overflow-x-auto p-4">
             <ProductSortableList products={products || []} />
+          </div>
         </div>
 
-        {/* ========== SLIDESHOW SECTION ========== */}
+        {/* SLIDESHOW */}
         <h2 className="text-2xl font-unifraktur text-white mb-4">Slideshow</h2>
-        <p className="text-gray-400 text-sm mb-4">Manage the homepage carousel images. (Recommended: wide landscape images, e.g. 1400x600)</p>
         <div className="mb-4">
           <AddSlideButton />
         </div>
-
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-12">
           <SlidesList slides={slides || []} />
+        </div>
+
+        {/* ✅ INBOX */}
+        <h2 className="text-2xl font-unifraktur text-white mb-4">Inbox</h2>
+        <p className="text-gray-400 text-sm mb-4">Customer messages from the Contact page.</p>
+        <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+          <InboxList inquiries={inquiries || []} />
         </div>
       </div>
     </main>
   )
 }
+

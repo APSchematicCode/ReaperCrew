@@ -71,59 +71,56 @@ export default function Header() {
           </div>
         </div>
 
-        {/* ✅ Mobile Drawer – CORRECT LAYOUT */}
+        {/* Mobile Drawer – Socials now inside the scrollable list */}
         <div
-          className={`fixed top-16 right-0 w-64 h-[calc(100vh-4rem)] bg-black/50 backdrop-blur-sm border-l border-gray-700 transform transition-transform duration-300 ease-in-out md:hidden flex flex-col overflow-hidden ${
+          className={`fixed top-16 right-0 w-64 h-[calc(100vh-4rem)] bg-black/50 backdrop-blur-sm border-l border-gray-700 transform transition-transform duration-300 ease-in-out md:hidden overflow-y-auto ${
             isMenuOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
-          {/* 1. Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            {/* Search */}
-            <div className="p-4 border-b border-gray-700">
-              <form action="/shop" method="GET" className="flex items-center">
-                <input
-                  type="text"
-                  name="search"
-                  placeholder="Search..."
-                  className="flex-1 px-3 py-1.5 bg-black border border-gray-700 rounded-l text-white text-sm focus:outline-none focus:border-gray-500"
-                />
-                <button type="submit" className="bg-gray-800 text-gray-300 px-3 py-1.5 rounded-r hover:bg-gray-700 transition">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </button>
-              </form>
-            </div>
-
-            {/* Links */}
-            <div className="p-6 space-y-4">
-              <Link href="/shop" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Shop</Link>
-              <Link href="/about" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>About</Link>
-              <Link href="/contact" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Contact</Link>
-              <Link href="/account" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Account</Link>
-              <Link href="/wishlist" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Wishlist</Link>
-              <Link href="/cart" className="block text-xl text-gray-300 hover:text-white transition  items-center gap-2" onClick={() => setIsMenuOpen(false)}>
-                Cartflex
-                {totalItems > 0 && (
-                  <span className="bg-white text-black text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                    {totalItems}
-                  </span>
-                )}
-              </Link>
-            </div>
+          {/* Search */}
+          <div className="p-4 border-b border-gray-700">
+            <form action="/shop" method="GET" className="flex items-center">
+              <input
+                type="text"
+                name="search"
+                placeholder="Search..."
+                className="flex-1 px-3 py-1.5 bg-black border border-gray-700 rounded-l text-white text-sm focus:outline-none focus:border-gray-500"
+              />
+              <button type="submit" className="bg-gray-800 text-gray-300 px-3 py-1.5 rounded-r hover:bg-gray-700 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+            </form>
           </div>
 
-          {/* 2. Pinned Socials – ALWAYS VISIBLE AT BOTTOM */}
-          <div className="shrink-0 bg-red-600 border-t border-gray-700 p-6">
-            <p className="text-white font-bold text-xs uppercase tracking-wider mb-3">⬇️ FOLLOW US (DEBUG)</p>
-            <div className="flex gap-5">
-              <a href="#" target="_blank" rel="noopener noreferrer" className="text-white font-bold hover:underline text-sm">
-                INSTAGRAM
-              </a>
-              <a href="#" target="_blank" rel="noopener noreferrer" className="text-white font-bold hover:underline text-sm">
-                YOUTUBE
-              </a>
+          {/* Links */}
+          <div className="p-6 space-y-4">
+            <Link href="/shop" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Shop</Link>
+            <Link href="/about" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>About</Link>
+            <Link href="/contact" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Contact</Link>
+            <Link href="/account" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Account</Link>
+            <Link href="/wishlist" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Wishlist</Link>
+            <Link href="/cart" className="block text-xl text-gray-300 hover:text-white transition items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+              Cart
+              {totalItems > 0 && (
+                <span className="bg-white text-black text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                  {totalItems}
+                </span>
+              )}
+            </Link>
+
+            {/* ✅ Socials as a normal list item, right under Cart */}
+            <div className="pt-4 border-t border-gray-700">
+              <p className="text-gray-400 text-xs uppercase tracking-wider mb-3">Follow Us</p>
+              <div className="flex gap-5">
+                <a href="#" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition text-sm">
+                  Instagram
+                </a>
+                <a href="#" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition text-sm">
+                  YouTube
+                </a>
+              </div>
             </div>
           </div>
         </div>

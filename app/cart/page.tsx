@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCart } from '@/context/CartContext'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
@@ -11,6 +11,7 @@ const SHIPPING_FEE_DOLLARS = 14.99
 const SHIPPING_TIME = "2-3 business days"
 const SHIPPING_FEE_CENTS = Math.round(SHIPPING_FEE_DOLLARS * 100)
 
+
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart, totalPrice } = useCart()
   const [couponCode, setCouponCode] = useState('')
@@ -19,6 +20,14 @@ export default function CartPage() {
   const [isApplying, setIsApplying] = useState(false)
   const { addToast } = useToast()
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('canceled') === 'true') {
+      addToast('Checkout was canceled. You can try again.', 'error')
+      window.history.replaceState({}, '', '/cart')
+    }
+  }, [addToast])
+  
   if (items.length === 0) {
     return (
       <main className="min-h-screen bg-black flex flex-col items-center justify-center px-4">
@@ -206,34 +215,42 @@ export default function CartPage() {
             </button>
             <button
               onClick={async () => {
-                const { data: { user } } = await supabase.auth.getUser()
-                const { error } = await supabase.from('orders').insert({
-                  user_id: user?.id || null,
-                  customer_email: user?.email || 'guest@example.com',
-                  customer_name: user?.user_metadata?.name || 'Guest',
-                  items_json: items.map(item => ({
-                    name: item.name,
-                    variant: item.variant,
-                    price: item.price,
-                    quantity: item.quantity
-                  })),
-                  total_cents: total,
-                  original_total_cents: subtotal + shipping,
-                  discount_cents: discount,
-                  coupon_code: appliedCoupon?.code || null,
-                  status: 'pending'
-                })
-                if (error) {
-                  addToast('Failed to place order: ' + error.message, 'error')
-                } else {
-                  addToast('Order placed! Check the admin dashboard.', 'success')
-                  clearCart()
+              // Check if cart is empty
+                if (items.length === 0) {
+                  addToast('Your cart is empty.', 'error')
+                  return
                 }
-              }}
-              className="bg-white text-black px-6 py-3 rounded font-medium hover:bg-gray-200 transition flex-1 sm:flex-none"
-            >
-              Proceed to Checkout
-            </button>
+
+                try {
+                  const response = await fetch('/api/create-checkout-session', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    items: items,
+                    totalCents: totalPrice,
+                    couponCode: appliedCoupon?.code || null,
+                    discountCents: appliedCoupon?.discount || 0,
+                    shippingCents: SHIPPING_FEE_CENTS,
+                    }),
+                })
+
+          const data = await response.json()
+            if (data.url) {
+              // Redirect to Stripe Checkout
+              window.location.href = data.url
+              // Clear cart locally (it will be cleared on success page via webhook, but we can do it now)
+              // However, we will clear it on the success page instead to avoid race conditions.
+            } else {
+              addToast(data.error || 'Failed to start checkout.', 'error')
+              }
+          } catch (error) {
+              addToast('An error occurred during checkout.', 'error')
+                }
+             }}
+          className="bg-white text-black px-6 py-3 rounded font-medium hover:bg-gray-200 transition flex-1 sm:flex-none"
+          >
+      Proceed to Checkout
+    </button>
           </div>
         </div>
       </div>

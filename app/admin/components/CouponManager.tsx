@@ -64,9 +64,9 @@ export default function CouponManager() {
   return (
     <div className="space-y-6">
       {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-gray-800 p-4 rounded-lg border border-gray-700 grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+      <form onSubmit={handleSubmit} className="bg-gray-800 p-4 rounded-lg border border-gray-700 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
         {/* Code */}
-        <div className="md:col-span-1">
+        <div>
           <label className="text-xs text-gray-400">Code *</label>
           <input
             name="code"
@@ -77,7 +77,7 @@ export default function CouponManager() {
           />
         </div>
         {/* Type */}
-        <div className="md:col-span-1">
+        <div>
           <label className="text-xs text-gray-400">Type</label>
           <select
             name="type"
@@ -89,7 +89,7 @@ export default function CouponManager() {
           </select>
         </div>
         {/* Value */}
-        <div className="md:col-span-1">
+        <div>
           <label className="text-xs text-gray-400">Value *</label>
           <input
             name="value"
@@ -100,19 +100,19 @@ export default function CouponManager() {
             className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
           />
         </div>
-        {/* ✅ Expires At – FIXED WIDTH (won't stretch), visible icon */}
-        <div className="md:col-span-2">
+        {/* ✅ Expires At – Same column as others, compact width */}
+        <div>
           <label className="text-xs text-gray-400">Expires (Optional)</label>
           <input
             name="expires_at"
             type="datetime-local"
             defaultValue={editing?.expires_at?.slice(0, 16) || ''}
             style={{ colorScheme: 'dark' }}
-            className="w-auto min-w-40 max-w-55 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:saturate-100"
+            className="w-full max-w-55 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:saturate-100"
           />
         </div>
         {/* Limit */}
-        <div className="md:col-span-1">
+        <div>
           <label className="text-xs text-gray-400">Limit</label>
           <input
             name="usage_limit"
@@ -122,7 +122,7 @@ export default function CouponManager() {
           />
         </div>
         {/* Buttons - Full Width */}
-        <div className="md:col-span-6 flex gap-3">
+        <div className="md:col-span-5 flex gap-3">
           <button type="submit" className="bg-white text-black px-4 py-1.5 rounded font-medium hover:bg-gray-200 transition">
             {editing ? 'Update' : 'Create'}
           </button>

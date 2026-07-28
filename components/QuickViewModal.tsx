@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import Image from 'next/image'
 import { useCart } from '@/context/CartContext'
+import { useToast } from '@/context/ToastContext'
 import { supabase } from '@/lib/supabase'
 import WaitlistButton from './WaitlistButton'
+import WishlistButton from './WishlistButton'
+import SizeGuideModal from './SizeGuideModal'
 import ReviewForm from './ReviewForm'
-import { useToast } from '@/context/ToastContext'
 
 type Product = {
   id: string
@@ -21,6 +23,7 @@ type Product = {
   variants_json: any
   image_metadata?: Record<string, { width: number; height: number }>
   out_of_stock?: boolean
+  specifications?: Record<string, string>
 }
 
 interface QuickViewModalProps {
@@ -32,6 +35,7 @@ interface QuickViewModalProps {
 export default function QuickViewModal({ isOpen, onClose, product }: QuickViewModalProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true })
   const { addItem } = useCart()
+  const { addToast } = useToast()
   const [selectedVariant, setSelectedVariant] = useState<string>('')
   const [quantity, setQuantity] = useState<number>(1)
   const [containerHeight, setContainerHeight] = useState<number>(400)
@@ -47,16 +51,13 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   const allVariantsOOS = variantKeys.every(key => (product?.variants_json?.[key] || 0) <= 0)
   const selectedVariantStock = selectedVariant ? (product?.variants_json?.[selectedVariant] || 0) : 0
   const isSelectedVariantOOS = selectedVariantStock <= 0
-  const { addToast } = useToast()
 
-  // Auto-select first variant on load
   useEffect(() => {
     if (variantKeys.length > 0 && !selectedVariant) {
       setSelectedVariant(variantKeys[0])
     }
   }, [variantKeys, selectedVariant])
 
-  // Fetch reviews when product changes
   const fetchReviews = async () => {
     if (!product) return
     const { data } = await supabase
@@ -165,7 +166,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             <div className="overflow-hidden h-full" ref={emblaRef}>
               <div className="flex h-full">
                 {images.map((url, idx) => (
-                  <div key={idx} className="flex-[0_0_100%] min-w-0 relative h-full">
+                  <div className="flex-[0_0_100%] min-w-0 relative h-full">
                     <Image
                       src={url}
                       alt={`${product.name} - Image ${idx + 1}`}
@@ -211,7 +212,6 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
               {product.description || 'No description provided.'}
             </p>
 
-            {/* Variants Dropdown */}
             {variantKeys.length > 0 && (
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -220,9 +220,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                 <select
                   value={selectedVariant}
                   onChange={(e) => setSelectedVariant(e.target.value)}
-                  className={`w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500 ${
-                    isGloballyOutOfStock ? 'opacity-50 pointer-events-none' : ''
-                  }`}
+                  className={`w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500 ${isGloballyOutOfStock ? 'opacity-50 pointer-events-none' : ''}`}
                   disabled={isGloballyOutOfStock}
                 >
                   {variantKeys.map((key) => {
@@ -238,7 +236,6 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
               </div>
             )}
 
-            {/* Action Buttons */}
             {(isGloballyOutOfStock || allVariantsOOS) ? (
               <WaitlistButton productId={product.id} productName={product.name} variant={selectedVariant || 'Default'} />
             ) : isSelectedVariantOOS ? (
@@ -276,13 +273,17 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
               </>
             )}
 
+            <div className="flex items-center justify-between mt-3">
+              {!isService && <SizeGuideModal productSpecs={product.specifications || {}} />}
+              <WishlistButton productId={product.id} variant={selectedVariant || 'Default'} className="text-gray-400 hover:text-red-500 transition" />
+            </div>
+
             <p className="text-xs text-gray-500 text-center mt-3">
               {images.length} image{images.length !== 1 ? 's' : ''}
             </p>
 
-            {/* ✅ Reviews Section */}
+            {/* Reviews Section */}
             <div className="mt-4 pt-4 border-t border-gray-700">
-              {/* Display approved reviews */}
               {reviews.length > 0 && (
                 <div className="mb-4">
                   <h4 className="text-white font-medium mb-2">Reviews ({reviews.length})</h4>
@@ -306,8 +307,6 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                   </div>
                 </div>
               )}
-
-              {/* Review Form */}
               {!isGloballyOutOfStock && !allVariantsOOS && (
                 <ReviewForm
                   productId={product.id}

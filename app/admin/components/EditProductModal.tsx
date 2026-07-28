@@ -19,7 +19,8 @@ interface EditProductModalProps {
     variants_json?: any
     popularity?: number
     image_metadata?: Record<string, { width: number; height: number }>
-    out_of_stock?: boolean // ✅ Added
+    out_of_stock?: boolean
+    specifications?: Record<string, string> // ✅ Added
   } | null
 }
 
@@ -39,7 +40,8 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [imageMetadata, setImageMetadata] = useState<ImageMetadata>({})
-  const [outOfStock, setOutOfStock] = useState(false) // ✅ New state
+  const [outOfStock, setOutOfStock] = useState(false)
+  const [specifications, setSpecifications] = useState<Record<string, string>>({}) // ✅ State
 
   const isService = productType === 'service'
 
@@ -54,14 +56,8 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
       setExistingImages(product.images_json || [])
       setPopularity(product.popularity || 0)
       setImageMetadata(product.image_metadata || {})
-      setOutOfStock(product.out_of_stock || false) // ✅ Load existing value
-
-      if (product.variants_json) {
-        const entries = Object.entries(product.variants_json)
-        setVariants(entries.map(([key, value]) => ({ key, value: value as number })))
-      } else {
-        setVariants([])
-      }
+      setOutOfStock(product.out_of_stock || false)
+      setSpecifications(product.specifications || {}) // ✅ Load
     }
   }, [product])
 
@@ -176,7 +172,8 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
         variants_json: variantsJson,
         popularity: popularity,
         image_metadata: finalMetadata,
-        out_of_stock: outOfStock, // ✅ Added
+        out_of_stock: outOfStock,
+        specifications: specifications, // ✅ Include
       })
       .eq('id', product.id)
 
@@ -226,6 +223,21 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
             <input type="number" value={popularity} onChange={(e) => setPopularity(parseInt(e.target.value) || 0)} className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
           </div>
 
+          {/* Specifications */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Specifications (JSON)</label>
+            <textarea
+              rows={4}
+              value={JSON.stringify(specifications, null, 2)}
+              onChange={(e) => {
+                try { setSpecifications(JSON.parse(e.target.value)) } catch {}
+              }}
+              className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500 font-mono text-sm"
+              placeholder='{"Material": "Cotton", "Fit": "Regular"}'
+            />
+            <p className="text-gray-500 text-xs mt-1">Enter valid JSON object with key-value pairs.</p>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">{isService ? 'Package Options (Name + Extra Price)' : 'Variants (Size + Stock)'}</label>
             {variants.map((variant, index) => (
@@ -235,7 +247,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
                   placeholder={isService ? 'Package name' : 'Size'}
                   value={variant.key}
                   onChange={(e) => updateVariantKey(index, e.target.value)}
-                  className="w-1/2 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
+                  className="w-1/3 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
                 />
                 <input
                   type="number"
@@ -244,8 +256,11 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
                   placeholder={isService ? 'Extra price' : 'Stock'}
                   value={isService ? (variant.value / 100).toFixed(2) : variant.value}
                   onChange={(e) => updateVariantValue(index, parseFloat(e.target.value) || 0)}
-                  className="w-1/3 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
+                  className="w-1/4 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
                 />
+                <span className={`text-xs font-semibold px-2 py-1 rounded ${variant.value <= 0 ? 'bg-red-900/50 text-red-300' : 'bg-green-900/50 text-green-300'}`}>
+                  {variant.value <= 0 ? 'OOS' : 'In Stock'}
+                </span>
                 <button type="button" onClick={() => removeVariant(index)} className="text-red-400 hover:text-red-300 text-sm">✕</button>
               </div>
             ))}
@@ -303,7 +318,6 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
             )}
           </div>
 
-          {/* ✅ Out of Stock Checkbox */}
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -312,7 +326,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
               onChange={(e) => setOutOfStock(e.target.checked)}
               className="w-4 h-4"
             />
-            <label htmlFor="outOfStock" className="text-sm text-gray-300">Mark as Out of Stock</label>
+            <label htmlFor="outOfStock" className="text-sm text-gray-300">Mark entire product as Out of Stock (overrides variants)</label>
           </div>
 
           <div className="flex items-center gap-2">

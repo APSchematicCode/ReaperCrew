@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import QuickViewModal from './QuickViewModal'
 import { useCart } from '@/context/CartContext'
-import WaitlistButton from './WaitlistButton'
 import { useToast } from '@/context/ToastContext'
+import WaitlistButton from './WaitlistButton'
+import WishlistButton from './WishlistButton'
+import SizeGuideModal from './SizeGuideModal'
 
 type Product = {
   id: string
@@ -19,6 +21,7 @@ type Product = {
   variants_json: any
   image_metadata?: Record<string, { width: number; height: number }>
   out_of_stock?: boolean
+  specifications?: Record<string, string>
 }
 
 export default function ProductGrid({ products }: { products: Product[] }) {
@@ -56,27 +59,19 @@ export default function ProductGrid({ products }: { products: Product[] }) {
           const imageCount = product.images_json?.length || 0
           const mainImage = product.images_json?.[0] || ''
           const variantKeys = product.variants_json ? Object.keys(product.variants_json) : []
-          const [selectedVariant, setSelectedVariant] = useState<string>('')
+          const [selectedVariant, setSelectedVariant] = useState<string>(variantKeys[0] || '')
           const [quantity, setQuantity] = useState<number>(1)
           const isService = product.product_type === 'service'
-
           const isGloballyOutOfStock = product.out_of_stock === true
           const allVariantsOOS = variantKeys.every(key => (product.variants_json?.[key] || 0) <= 0)
           const selectedVariantStock = selectedVariant ? (product.variants_json?.[selectedVariant] || 0) : 0
           const isSelectedVariantOOS = selectedVariantStock <= 0
 
-          // Auto-select the first variant on load
-          useEffect(() => {
-            if (variantKeys.length > 0 && !selectedVariant) {
-              setSelectedVariant(variantKeys[0])
-            }
-          }, [variantKeys, selectedVariant])
-
           return (
             <div key={product.id} className="bg-gray-900 rounded-lg overflow-hidden border border-gray-800 hover:border-gray-600 transition group flex flex-col">
-              <div className="relative h-64 w-full bg-gray-800">
+              <div className="relative h-64 w-full bg-gray-800 overflow-hidden">
                 {mainImage ? (
-                  <>
+                  <div className="w-full h-full">
                     <Image
                       src={mainImage}
                       alt={product.name}
@@ -84,18 +79,18 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                       className="object-contain"
                       sizes="(max-width: 768px) 100vw, 33vw"
                     />
-                    {imageCount > 1 && (
-                      <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm border border-gray-600">
-                        +{imageCount - 1}
-                      </div>
-                    )}
-                  </>
+                  </div>
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     <span className="text-xs">No Image</span>
+                  </div>
+                )}
+                {imageCount > 1 && (
+                  <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm border border-gray-600">
+                    +{imageCount - 1}
                   </div>
                 )}
                 <button
@@ -127,15 +122,12 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                   <p className="text-xs text-gray-400 mt-2">Will start shipping {product.estimated_ship_date}</p>
                 )}
 
-                {/* ✅ DROPDOWN: All variants are selectable, including OOS ones */}
                 {variantKeys.length > 0 && (
                   <div className="mt-3">
                     <select
                       value={selectedVariant}
                       onChange={(e) => setSelectedVariant(e.target.value)}
-                      className={`w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500 ${
-                        isGloballyOutOfStock ? 'opacity-50 pointer-events-none' : ''
-                      }`}
+                      className={`w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500 ${isGloballyOutOfStock ? 'opacity-50 pointer-events-none' : ''}`}
                       disabled={isGloballyOutOfStock}
                     >
                       {variantKeys.map((key) => {
@@ -154,18 +146,11 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                   </div>
                 )}
 
-                {/* ✅ RENDER LOGIC: Show Waitlist for OOS variant, Add to Cart for In Stock */}
                 {(isGloballyOutOfStock || allVariantsOOS) ? (
-                  // Entire product is OOS
                   <div className="mt-3">
-                    <WaitlistButton
-                      productId={product.id}
-                      productName={product.name}
-                      variant={selectedVariant || 'Default'}
-                    />
+                    <WaitlistButton productId={product.id} productName={product.name} variant={selectedVariant || 'Default'} />
                   </div>
                 ) : isSelectedVariantOOS ? (
-                  // Specific variant is OOS (user selected it)
                   <>
                     <div className="mt-3">
                       <span className="block text-center text-red-500 font-bold text-sm uppercase tracking-wider border border-red-800 bg-red-900/20 py-1.5 rounded">
@@ -173,15 +158,10 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                       </span>
                     </div>
                     <div className="mt-2">
-                      <WaitlistButton
-                        productId={product.id}
-                        productName={product.name}
-                        variant={selectedVariant || 'Default'}
-                      />
+                      <WaitlistButton productId={product.id} productName={product.name} variant={selectedVariant || 'Default'} />
                     </div>
                   </>
                 ) : (
-                  // In Stock
                   <>
                     <div className="mt-3 flex items-center gap-3">
                       <button
@@ -198,7 +178,6 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                         +
                       </button>
                     </div>
-
                     <button
                       onClick={() => handleAddToCart(product, selectedVariant, quantity)}
                       className="mt-3 w-full bg-white text-black py-2 rounded hover:bg-gray-200 transition font-medium text-sm"
@@ -207,6 +186,11 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                     </button>
                   </>
                 )}
+
+                <div className="flex items-center justify-between mt-3">
+                  {!isService && <SizeGuideModal productSpecs={product.specifications || {}} />}
+                  <WishlistButton productId={product.id} variant={selectedVariant || 'Default'} className="text-gray-400 hover:text-red-500 transition" />
+                </div>
               </div>
             </div>
           )

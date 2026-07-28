@@ -18,7 +18,7 @@ export default function Footer() {
               <Link href="/cart" className="text-gray-400 hover:text-white transition">Cart</Link>
             </nav>
 
-            {/* ✅ Only Instagram & YouTube */}
+            {/* Socials */}
             <div className="flex gap-3">
               <a href="#" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white transition" aria-label="Instagram">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -33,8 +33,16 @@ export default function Footer() {
             </div>
           </div>
         </div>
-        <div className="text-center text-gray-600 text-xs mt-6 border-t border-gray-800 pt-4">
-          &copy; {new Date().getFullYear()} Reaper Crew. All rights reserved.
+
+        {/* Legal Links */}
+        <div className="flex flex-wrap justify-center gap-4 text-xs text-gray-500 mt-6 border-t border-gray-800 pt-4">
+          <Link href="/privacy" className="hover:text-gray-300 transition">Privacy Policy</Link>
+          <Link href="/terms" className="hover:text-gray-300 transition">Terms of Service</Link>
+          <Link href="/returns" className="hover:text-gray-300 transition">Returns Policy</Link>
+        </div>
+
+        <div className="text-center text-gray-600 text-xs mt-4">
+          &copy;2024 Reaper Crew. All rights reserved.
         </div>
       </div>
     </footer>

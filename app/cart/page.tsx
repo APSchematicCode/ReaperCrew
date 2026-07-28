@@ -5,6 +5,7 @@ import { useCart } from '@/context/CartContext'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useToast } from '@/context/ToastContext'
 
 const SHIPPING_FEE_DOLLARS = 14.99
 const SHIPPING_TIME = "2-3 business days"
@@ -16,6 +17,7 @@ export default function CartPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; type: 'percentage' | 'fixed' } | null>(null)
   const [couponError, setCouponError] = useState('')
   const [isApplying, setIsApplying] = useState(false)
+  const { addToast } = useToast()
 
   if (items.length === 0) {
     return (
@@ -222,9 +224,9 @@ export default function CartPage() {
                   status: 'pending'
                 })
                 if (error) {
-                  alert('Failed to place order: ' + error.message)
+                  addToast('Failed to place order: ' + error.message, 'error')
                 } else {
-                  alert('Order placed! Check the admin dashboard.')
+                  addToast('Order placed! Check the admin dashboard.', 'success')
                   clearCart()
                 }
               }}

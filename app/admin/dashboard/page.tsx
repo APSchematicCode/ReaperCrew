@@ -11,6 +11,8 @@ import OrdersList from '../components/OrdersList'
 import ReviewsList from '../components/ReviewsList'
 import WaitlistList from '../components/WaitlistList'
 import CouponManager from '../components/CouponManager'
+import AnalyticsCards from '../components/AnalyticsCards'
+import ShippingSettings from '../components/ShippingSettings'
 
 export const revalidate = 0
 
@@ -63,13 +65,59 @@ export default async function AdminDashboard() {
     .select('*, products(name)')
     .order('created_at', { ascending: false })
 
+  // ===== ANALYTICS =====
+  // Total Revenue
+  const { data: allOrders } = await supabase
+    .from('orders')
+    .select('total_cents, created_at, items_json')
+
+  const totalRevenue = allOrders?.reduce((acc, o) => acc + o.total_cents, 0) || 0
+
+  // Monthly Revenue
+  const now = new Date()
+  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+  const monthlyOrders = allOrders?.filter(o => o.created_at >= firstOfMonth) || []
+  const monthlyRevenue = monthlyOrders.reduce((acc, o) => acc + o.total_cents, 0) || 0
+
+  // Best Sellers
+  const itemCounts: Record<string, number> = {}
+  allOrders?.forEach((order) => {
+    const items = order.items_json || []
+    items.forEach((item: any) => {
+      const name = item.name || 'Unknown'
+      itemCounts[name] = (itemCounts[name] || 0) + (item.quantity || 1)
+    })
+  })
+  const bestSellers = Object.entries(itemCounts)
+    .map(([name, total]) => ({ name, total }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 5)
+
+  const analyticsData = {
+    totalRevenue,
+    totalOrders: allOrders?.length || 0,
+    monthlyRevenue,
+    bestSellers,
+  }
+
   return (
     <main className="min-h-screen bg-black">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <h1 className="text-3xl font-unifraktur text-white mb-2">Admin Dashboard</h1>
-        <p className="text-gray-400 mb-8">Manage your products, slides, orders, and customer inquiries.</p>
+        <p className="text-gray-400 mb-8">Manage your store.</p>
 
-        {/* PRODUCTS */}
+        {/* ===== ANALYTICS ===== */}
+        <h2 className="text-2xl font-unifraktur text-white mb-4">Analytics</h2>
+        <AnalyticsCards data={analyticsData} />
+
+        {/* ===== SETTINGS ===== */}
+        <h2 className="text-2xl font-unifraktur text-white mb-4">Settings</h2>
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-12">
+          <p className="text-gray-400 text-sm mb-4">Configure store settings.</p>
+          <ShippingSettings />
+        </div>
+
+        {/* ===== PRODUCTS ===== */}
         <h2 className="text-2xl font-unifraktur text-white mb-4">Products</h2>
         <div className="mb-4">
           <AddProductButtonWrapper />
@@ -80,7 +128,7 @@ export default async function AdminDashboard() {
           </div>
         </div>
 
-        {/* SLIDESHOW */}
+        {/* ===== SLIDESHOW ===== */}
         <h2 className="text-2xl font-unifraktur text-white mb-4">Slideshow</h2>
         <div className="mb-4">
           <AddSlideButton />
@@ -89,41 +137,40 @@ export default async function AdminDashboard() {
           <SlidesList slides={slides || []} />
         </div>
 
-        {/* ORDERS */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4 mt-12">Orders</h2>
-        <p className="text-gray-400 text-sm mb-4">Manage customer orders and update fulfillment status.</p>
+        {/* ===== ORDERS ===== */}
+        <h2 className="text-2xl font-unifraktur text-white mb-4">Orders</h2>
+        <p className="text-gray-400 text-sm mb-4">Manage customer orders.</p>
         <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden mb-12">
           <OrdersList orders={orders || []} />
         </div>
 
-        {/* WAITLIST */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4 mt-12">Waitlist</h2>
-        <p className="text-gray-400 text-sm mb-4">Customers who want to be notified when items are back in stock.</p>
+        {/* ===== WAITLIST ===== */}
+        <h2 className="text-2xl font-unifraktur text-white mb-4">Waitlist</h2>
+        <p className="text-gray-400 text-sm mb-4">Customers who want restock notifications.</p>
         <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden mb-12">
           <WaitlistList entries={waitlist || []} />
         </div>
 
-        {/* INBOX */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4 mt-12">Inbox</h2>
-        <p className="text-gray-400 text-sm mb-4">Customer messages from the Contact page.</p>
+        {/* ===== INBOX ===== */}
+        <h2 className="text-2xl font-unifraktur text-white mb-4">Inbox</h2>
+        <p className="text-gray-400 text-sm mb-4">Customer messages.</p>
         <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden mb-12">
           <InboxList inquiries={inquiries || []} />
         </div>
 
-        {/* ✅ REVIEWS */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4 mt-12">Reviews</h2>
-        <p className="text-gray-400 text-sm mb-4">Approve or delete customer reviews.</p>
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+        {/* ===== REVIEWS ===== */}
+        <h2 className="text-2xl font-unifraktur text-white mb-4">Reviews</h2>
+        <p className="text-gray-400 text-sm mb-4">Approve or delete reviews.</p>
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-12">
           <ReviewsList />
         </div>
 
-        {/* COUPONS */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4 mt-12">Discount Codes</h2>
-        <p className="text-gray-400 text-sm mb-4">Create and manage coupon codes for promotions.</p>
+        {/* ===== COUPONS ===== */}
+        <h2 className="text-2xl font-unifraktur text-white mb-4">Discount Codes</h2>
+        <p className="text-gray-400 text-sm mb-4">Manage promotions.</p>
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
           <CouponManager />
         </div>
-
       </div>
     </main>
   )

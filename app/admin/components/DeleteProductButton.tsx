@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/context/ToastContext' // ✅ Import
 
 interface DeleteProductButtonProps {
   productId: string
@@ -11,6 +12,7 @@ interface DeleteProductButtonProps {
 export default function DeleteProductButton({ productId, productName }: DeleteProductButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const { addToast } = useToast() // ✅ Destructure
 
   const handleDelete = async () => {
     setIsLoading(true)
@@ -21,14 +23,14 @@ export default function DeleteProductButton({ productId, productName }: DeletePr
       .eq('id', productId)
 
     if (error) {
-      alert(`Error deleting product: ${error.message}`)
+      addToast(`Error deleting product: ${error.message}`, 'error')
       setIsLoading(false)
       return
     }
 
     setIsLoading(false)
     setShowConfirm(false)
-    // Hard reload to ensure the UI matches the database
+    addToast(`"${productName}" deleted successfully.`, 'success')
     window.location.reload()
   }
 

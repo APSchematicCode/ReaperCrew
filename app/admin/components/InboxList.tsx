@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/context/ToastContext'
 
 
 type Inquiry = {
@@ -21,6 +22,7 @@ export default function InboxList({ inquiries }: InboxListProps) {
   const [items, setItems] = useState(inquiries)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [selectedMessage, setSelectedMessage] = useState<Inquiry | null>(null)
+  const { addToast } = useToast()
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this message?')) return
@@ -32,7 +34,7 @@ export default function InboxList({ inquiries }: InboxListProps) {
       .eq('id', id)
 
     if (error) {
-      alert('Failed to delete message.')
+      addToast('Failed to delete message.', 'error')
       setLoadingId(null)
       return
     }

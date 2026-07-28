@@ -12,12 +12,10 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-black/90 backdrop-blur-sm border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
           <Link href="/" className="text-3xl font-unifraktur tracking-wider text-white hover:text-gray-300 transition">
             Reaper Crew
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link href="/shop" className="text-gray-300 hover:text-white transition">Shop</Link>
             <Link href="/about" className="text-gray-300 hover:text-white transition">About</Link>
@@ -51,7 +49,6 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* Mobile: Hamburger + Badge */}
           <div className="md:hidden flex items-center gap-2 relative">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -76,12 +73,13 @@ export default function Header() {
 
         {/* Mobile Drawer */}
         <div
-          className={`fixed top-16 right-0 h-[calc(100vh-4rem)] w-64 bg-black/50 backdrop-blur-sm border-l border-gray-700 transform transition-transform duration-300 ease-in-out md:hidden flex flex-col justify-between ${
+          className={`fixed top-16 right-0 h-[calc(100vh-4rem)] w-64 bg-black/50 backdrop-blur-sm border-l border-gray-700 transform transition-transform duration-300 ease-in-out md:hidden flex flex-col ${
             isMenuOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
-          <div>
-            {/* ✅ NEW: Search bar in mobile drawer */}
+          {/* Scrollable content area */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Search */}
             <div className="p-4 border-b border-gray-700">
               <form action="/shop" method="GET" className="flex items-center">
                 <input
@@ -116,15 +114,15 @@ export default function Header() {
             </div>
           </div>
 
-          {/* ✅ Socials – Replaced SVG with plain text for debugging */}
-          <div className="bg-black border-t border-gray-700 p-6">
-            <p className="text-gray-400 text-xs uppercase tracking-wider mb-3">Follow Us</p>
+          {/* ✅ DEBUG: Bright red background – you should see this instantly */}
+          <div className="bg-red-600 border-t border-gray-700 p-6 shrink-0">
+            <p className="text-white font-bold text-xs uppercase tracking-wider mb-3">⬇️ FOLLOW US (DEBUG)</p>
             <div className="flex gap-5">
-              <a href="#" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition text-sm">
-                Instagram
+              <a href="#" target="_blank" rel="noopener noreferrer" className="text-white font-bold hover:underline text-sm">
+                INSTAGRAM
               </a>
-              <a href="#" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition text-sm">
-                YouTube
+              <a href="#" target="_blank" rel="noopener noreferrer" className="text-white font-bold hover:underline text-sm">
+                YOUTUBE
               </a>
             </div>
           </div>

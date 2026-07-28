@@ -12,11 +12,12 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-black/90 backdrop-blur-sm border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
+          {/* Logo */}
           <Link href="/" className="text-3xl font-unifraktur tracking-wider text-white hover:text-gray-300 transition">
             Reaper Crew
           </Link>
 
-          {/* Desktop Navigation + Search */}
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link href="/shop" className="text-gray-300 hover:text-white transition">Shop</Link>
             <Link href="/about" className="text-gray-300 hover:text-white transition">About</Link>
@@ -50,7 +51,7 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* Mobile Hamburger */}
+          {/* Mobile: Hamburger + Badge */}
           <div className="md:hidden flex items-center gap-2 relative">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -73,12 +74,13 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile Drawer */}
+        {/* Mobile Drawer – Social Icons FIXED */}
         <div
           className={`fixed top-16 right-0 h-[calc(100vh-4rem)] w-64 bg-black/50 backdrop-blur-sm border-l border-gray-700 transform transition-transform duration-300 ease-in-out md:hidden flex flex-col justify-between ${
             isMenuOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
+          {/* Links */}
           <div className="p-6 space-y-4">
             <Link href="/shop" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Shop</Link>
             <Link href="/about" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>About</Link>
@@ -94,7 +96,9 @@ export default function Header() {
               )}
             </Link>
           </div>
-          <div className="p-6 pt-4 border-t border-gray-700">
+
+          {/* ✅ Socials – Pinned to bottom, fully opaque background, visible */}
+          <div className="bg-black border-t border-gray-700 p-6">
             <p className="text-gray-400 text-xs uppercase tracking-wider mb-3">Follow Us</p>
             <div className="flex gap-5">
               <a href="#" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-white transition">

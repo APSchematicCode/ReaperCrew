@@ -71,14 +71,14 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile Drawer */}
+        {/* ✅ Mobile Drawer – FIXED LAYOUT */}
         <div
-          className={`fixed top-16 right-0 h-[calc(100vh-4rem)] w-64 bg-black/50 backdrop-blur-sm border-l border-gray-700 transform transition-transform duration-300 ease-in-out md:hidden flex flex-col ${
+          className={`fixed top-16 right-0 h-[calc(100vh-4rem)] w-64 bg-black/50 backdrop-blur-sm border-l border-gray-700 transform transition-transform duration-300 ease-in-out md:hidden flex flex-col overflow-hidden ${
             isMenuOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
-          {/* Scrollable content area */}
-          <div className="flex-1 overflow-y-auto">
+          {/* 1. Scrollable Content Area (takes all space) */}
+          <div className="flex-1 overflow-y-auto min-h-0">
             {/* Search */}
             <div className="p-4 border-b border-gray-700">
               <form action="/shop" method="GET" className="flex items-center">
@@ -114,8 +114,8 @@ export default function Header() {
             </div>
           </div>
 
-          {/* ✅ DEBUG: Bright red background – you should see this instantly */}
-          <div className="bg-red-600 border-t border-gray-700 p-6 shrink-0">
+          {/* 2. Pinned Socials – ALWAYS VISIBLE */}
+          <div className="shrink-0 bg-red-600 border-t border-gray-700 p-6">
             <p className="text-white font-bold text-xs uppercase tracking-wider mb-3">⬇️ FOLLOW US (DEBUG)</p>
             <div className="flex gap-5">
               <a href="#" target="_blank" rel="noopener noreferrer" className="text-white font-bold hover:underline text-sm">

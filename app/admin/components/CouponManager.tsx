@@ -100,15 +100,15 @@ export default function CouponManager() {
             className="w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
           />
         </div>
-        {/* Expires At – Shortened width, visible icon */}
-        <div className="md:col-span-1">
+        {/* ✅ Expires At – FIXED WIDTH (won't stretch), visible icon */}
+        <div className="md:col-span-2">
           <label className="text-xs text-gray-400">Expires (Optional)</label>
           <input
             name="expires_at"
             type="datetime-local"
             defaultValue={editing?.expires_at?.slice(0, 16) || ''}
             style={{ colorScheme: 'dark' }}
-            className="w-full max-w-250px px-6 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:saturate-100"
+            className="w-auto min-w-40 max-w-55 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:saturate-100"
           />
         </div>
         {/* Limit */}

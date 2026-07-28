@@ -2,9 +2,15 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-06-24.dahlia', // Use the latest stable version
-})
+// ✅ Lazy initializer – only creates Stripe when the endpoint is called
+function getStripe() {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('STRIPE_SECRET_KEY is not set')
+  }
+  return new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2026-06-24.dahlia',
+  })
+}
 
 export async function POST(req: Request) {
   try {
@@ -18,7 +24,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
     }
 
-    // 1. Create a pending order in Supabase (so we have an ID to reference)
+    // Create pending order...
     const orderData: any = {
       user_id: user?.id || null,
       customer_email: user?.email || 'guest@example.com',
@@ -28,7 +34,7 @@ export async function POST(req: Request) {
       original_total_cents: totalCents + discountCents,
       discount_cents: discountCents || 0,
       coupon_code: couponCode || null,
-      status: 'pending', // Will be updated to 'paid' by webhook
+      status: 'pending',
     }
 
     const { data: order, error: orderError } = await supabase
@@ -42,12 +48,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to create order' }, { status: 500 })
     }
 
-    // 2. Create Stripe Checkout Session
+    // ✅ Initialize Stripe here (only when needed)
+    const stripe = getStripe()
+
+    // Build line items...
     const lineItems = items.map((item: any) => {
-      const unitAmount = Math.round(item.price / item.quantity) // price is total price for all quantities in the cart item
-      // Actually, item.price is the unit price (I need to check the cart structure).
-      // In our cart, item.price is the total price for that line item? Let's assume each item has a price per unit.
-      // Let's calculate safely: if item.quantity > 1, divide.
       const unitPrice = Math.round(item.price / item.quantity)
       return {
         price_data: {
@@ -61,29 +66,23 @@ export async function POST(req: Request) {
       }
     })
 
-    // Add shipping as a separate line item if it's > 0
     if (shippingCents > 0) {
       lineItems.push({
         price_data: {
           currency: 'usd',
-          product_data: {
-            name: 'Shipping (Flat Rate)',
-          },
+          product_data: { name: 'Shipping (Flat Rate)' },
           unit_amount: shippingCents,
         },
         quantity: 1,
       })
     }
 
-    // Add discount as a negative line item if it's > 0
     if (discountCents && discountCents > 0) {
       lineItems.push({
         price_data: {
           currency: 'usd',
-          product_data: {
-            name: `Discount ${couponCode ? `(${couponCode})` : ''}`,
-          },
-          unit_amount: -discountCents, // ✅ Negative amount for discount
+          product_data: { name: `Discount ${couponCode ? `(${couponCode})` : ''}` },
+          unit_amount: -discountCents,
         },
         quantity: 1,
       })
@@ -98,9 +97,7 @@ export async function POST(req: Request) {
       mode: 'payment',
       success_url: `${baseUrl}/order/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/cart?canceled=true`,
-      metadata: {
-        order_id: order.id,
-      },
+      metadata: { order_id: order.id },
       customer_email: user?.email || undefined,
       shipping_address_collection: {
         allowed_countries: ['US', 'CA'],

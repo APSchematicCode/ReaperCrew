@@ -71,13 +71,13 @@ export default function Header() {
           </div>
         </div>
 
-        {/* ✅ Mobile Drawer – FIXED LAYOUT */}
+        {/* ✅ Mobile Drawer – CORRECT LAYOUT */}
         <div
-          className={`fixed top-16 right-0 h-[calc(100vh-4rem)] w-64 bg-black/50 backdrop-blur-sm border-l border-gray-700 transform transition-transform duration-300 ease-in-out md:hidden flex flex-col overflow-hidden ${
+          className={`fixed top-16 right-0 w-64 h-[calc(100vh-4rem)] bg-black/50 backdrop-blur-sm border-l border-gray-700 transform transition-transform duration-300 ease-in-out md:hidden flex flex-col overflow-hidden ${
             isMenuOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
-          {/* 1. Scrollable Content Area (takes all space) */}
+          {/* 1. Scrollable Content Area */}
           <div className="flex-1 overflow-y-auto min-h-0">
             {/* Search */}
             <div className="p-4 border-b border-gray-700">
@@ -103,8 +103,8 @@ export default function Header() {
               <Link href="/contact" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Contact</Link>
               <Link href="/account" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Account</Link>
               <Link href="/wishlist" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Wishlist</Link>
-              <Link href="/cart" className="block text-xl text-gray-300 hover:text-white transition items-center gap-2" onClick={() => setIsMenuOpen(false)}>
-                Cart
+              <Link href="/cart" className="block text-xl text-gray-300 hover:text-white transition  items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+                Cartflex
                 {totalItems > 0 && (
                   <span className="bg-white text-black text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                     {totalItems}
@@ -114,7 +114,7 @@ export default function Header() {
             </div>
           </div>
 
-          {/* 2. Pinned Socials – ALWAYS VISIBLE */}
+          {/* 2. Pinned Socials – ALWAYS VISIBLE AT BOTTOM */}
           <div className="shrink-0 bg-red-600 border-t border-gray-700 p-6">
             <p className="text-white font-bold text-xs uppercase tracking-wider mb-3">⬇️ FOLLOW US (DEBUG)</p>
             <div className="flex gap-5">

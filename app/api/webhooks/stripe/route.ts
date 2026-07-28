@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
-// ✅ Lazy initializer
+// ✅ Lazy initializers for Stripe and Supabase
 function getStripe() {
   if (!process.env.STRIPE_SECRET_KEY) {
     throw new Error('STRIPE_SECRET_KEY is not set')
@@ -12,10 +12,14 @@ function getStripe() {
   })
 }
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // This is for the webhook update, no Stripe
-)
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) {
+    throw new Error('Supabase URL or Service Role Key is missing')
+  }
+  return createClient(url, key)
+}
 
 export async function POST(req: Request) {
   const rawBody = await req.text()
@@ -24,7 +28,7 @@ export async function POST(req: Request) {
   let event
 
   try {
-    const stripe = getStripe() // ✅ Only initialized here
+    const stripe = getStripe()
     event = stripe.webhooks.constructEvent(
       rawBody,
       signature,
@@ -47,23 +51,30 @@ export async function POST(req: Request) {
 
       const shippingAddress = (session as any).shipping?.address || null
 
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({
-          status: 'paid',
-          stripe_payment_intent_id: session.payment_intent,
-          customer_email: session.customer_details?.email || session.customer_email,
-          customer_name: session.customer_details?.name || null,
-          shipping_address: shippingAddress,
-        })
-        .eq('id', orderId)
+      // ✅ Lazy Supabase – only created when we actually need to update
+      try {
+        const supabase = getSupabase()
+        const { error: updateError } = await supabase
+          .from('orders')
+          .update({
+            status: 'paid',
+            stripe_payment_intent_id: session.payment_intent,
+            customer_email: session.customer_details?.email || session.customer_email,
+            customer_name: session.customer_details?.name || null,
+            shipping_address: shippingAddress,
+          })
+          .eq('id', orderId)
 
-      if (updateError) {
-        console.error('Failed to update order:', updateError)
-        return NextResponse.json({ error: 'Failed to update order' }, { status: 500 })
+        if (updateError) {
+          console.error('Failed to update order:', updateError)
+          return NextResponse.json({ error: 'Failed to update order' }, { status: 500 })
+        }
+
+        console.log(`✅ Order ${orderId} marked as paid.`)
+      } catch (err: any) {
+        console.error('Supabase initialization error:', err.message)
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
       }
-
-      console.log(`✅ Order ${orderId} marked as paid.`)
       break
     }
 

@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/context/ToastContext'
+import ConfirmModal from '@/components/ConfirmModal'
 
 type WaitlistEntry = {
   id: string
@@ -19,24 +21,35 @@ interface WaitlistListProps {
 export default function WaitlistList({ entries }: WaitlistListProps) {
   const [items, setItems] = useState(entries)
   const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const { addToast } = useToast()
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Remove this email from the waitlist?')) return
-    setLoadingId(id)
+  const handleDeleteClick = (id: string) => {
+    setPendingDeleteId(id)
+    setShowConfirm(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteId) return
+    setLoadingId(pendingDeleteId)
 
     const { error } = await supabase
       .from('waitlist')
       .delete()
-      .eq('id', id)
+      .eq('id', pendingDeleteId)
 
     if (error) {
-      alert('Failed to remove entry.')
+      addToast(`Failed to remove: ${error.message}`, 'error')
       setLoadingId(null)
+      setPendingDeleteId(null)
       return
     }
 
-    setItems(items.filter(item => item.id !== id))
+    setItems(items.filter(item => item.id !== pendingDeleteId))
     setLoadingId(null)
+    setPendingDeleteId(null)
+    addToast('Entry removed.', 'success')
   }
 
   if (items.length === 0) {
@@ -44,39 +57,53 @@ export default function WaitlistList({ entries }: WaitlistListProps) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left">
-        <thead className="bg-gray-800 border-b border-gray-700">
-          <tr>
-            <th className="px-4 py-3 text-sm font-semibold text-gray-300">Email</th>
-            <th className="px-4 py-3 text-sm font-semibold text-gray-300">Product</th>
-            <th className="px-4 py-3 text-sm font-semibold text-gray-300">Variant</th>
-            <th className="px-4 py-3 text-sm font-semibold text-gray-300">Date</th>
-            <th className="px-4 py-3 text-sm font-semibold text-gray-300 text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((entry) => (
-            <tr key={entry.id} className="border-b border-gray-800 hover:bg-gray-800/50 transition">
-              <td className="px-4 py-3 text-white">{entry.user_email}</td>
-              <td className="px-4 py-3 text-gray-300">{entry.products?.name || 'Unknown'}</td>
-              <td className="px-4 py-3 text-gray-400">{entry.variant || 'Default'}</td>
-              <td className="px-4 py-3 text-gray-400 text-sm">
-                {new Date(entry.created_at).toLocaleDateString()}
-              </td>
-              <td className="px-4 py-3 text-right">
-                <button
-                  onClick={() => handleDelete(entry.id)}
-                  disabled={loadingId === entry.id}
-                  className="text-red-400 hover:text-red-300 text-sm font-medium disabled:opacity-50"
-                >
-                  {loadingId === entry.id ? '...' : 'Remove'}
-                </button>
-              </td>
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead className="bg-gray-800 border-b border-gray-700">
+            <tr>
+              <th className="px-4 py-3 text-sm font-semibold text-gray-300">Email</th>
+              <th className="px-4 py-3 text-sm font-semibold text-gray-300">Product</th>
+              <th className="px-4 py-3 text-sm font-semibold text-gray-300">Variant</th>
+              <th className="px-4 py-3 text-sm font-semibold text-gray-300">Date</th>
+              <th className="px-4 py-3 text-sm font-semibold text-gray-300 text-right">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {items.map((entry) => (
+              <tr key={entry.id} className="border-b border-gray-800 hover:bg-gray-800/50 transition">
+                <td className="px-4 py-3 text-white">{entry.user_email}</td>
+                <td className="px-4 py-3 text-gray-300">{entry.products?.name || 'Unknown'}</td>
+                <td className="px-4 py-3 text-gray-400">{entry.variant || 'Default'}</td>
+                <td className="px-4 py-3 text-gray-400 text-sm">
+                  {new Date(entry.created_at).toLocaleDateString()}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <button
+                    onClick={() => handleDeleteClick(entry.id)}
+                    disabled={loadingId === entry.id}
+                    className="text-red-400 hover:text-red-300 text-sm font-medium disabled:opacity-50"
+                  >
+                    {loadingId === entry.id ? '...' : 'Remove'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <ConfirmModal
+        isOpen={showConfirm}
+        onClose={() => {
+          setShowConfirm(false)
+          setPendingDeleteId(null)
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Remove from Waitlist"
+        message="Are you sure you want to remove this email from the waitlist?"
+        confirmText="Remove"
+      />
+    </>
   )
 }

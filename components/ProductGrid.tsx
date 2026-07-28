@@ -5,6 +5,7 @@ import Image from 'next/image'
 import QuickViewModal from './QuickViewModal'
 import { useCart } from '@/context/CartContext'
 import WaitlistButton from './WaitlistButton'
+import { useToast } from '@/context/ToastContext'
 
 type Product = {
   id: string
@@ -23,6 +24,7 @@ type Product = {
 export default function ProductGrid({ products }: { products: Product[] }) {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const { addItem } = useCart()
+  const { addToast } = useToast()
 
   if (!products || products.length === 0) {
     return <div className="text-gray-400">No products available</div>
@@ -44,6 +46,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
       variant: variantKey || 'Default',
       quantity: quantity,
     })
+    addToast(`${product.name} added to cart!`, 'success')
   }
 
   return (

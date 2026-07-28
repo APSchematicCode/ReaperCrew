@@ -7,6 +7,7 @@ import { useCart } from '@/context/CartContext'
 import { supabase } from '@/lib/supabase'
 import WaitlistButton from './WaitlistButton'
 import ReviewForm from './ReviewForm'
+import { useToast } from '@/context/ToastContext'
 
 type Product = {
   id: string
@@ -46,6 +47,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
   const allVariantsOOS = variantKeys.every(key => (product?.variants_json?.[key] || 0) <= 0)
   const selectedVariantStock = selectedVariant ? (product?.variants_json?.[selectedVariant] || 0) : 0
   const isSelectedVariantOOS = selectedVariantStock <= 0
+  const { addToast } = useToast()
 
   // Auto-select first variant on load
   useEffect(() => {
@@ -137,6 +139,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
       variant: selectedVariant || 'Default',
       quantity: quantity,
     })
+    addToast(`${product.name} added to cart!`, 'success')
     onClose()
   }
 

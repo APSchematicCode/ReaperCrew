@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/context/ToastContext'
-
+import ConfirmModal from '@/components/ConfirmModal'
 
 type Inquiry = {
   id: string
@@ -22,25 +22,35 @@ export default function InboxList({ inquiries }: InboxListProps) {
   const [items, setItems] = useState(inquiries)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [selectedMessage, setSelectedMessage] = useState<Inquiry | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const { addToast } = useToast()
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this message?')) return
-    setLoadingId(id)
+  const handleDeleteClick = (id: string) => {
+    setPendingDeleteId(id)
+    setShowConfirm(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteId) return
+    setLoadingId(pendingDeleteId)
 
     const { error } = await supabase
       .from('inquiries')
       .delete()
-      .eq('id', id)
+      .eq('id', pendingDeleteId)
 
     if (error) {
-      addToast('Failed to delete message.', 'error')
+      addToast(`Failed to delete message: ${error.message}`, 'error')
       setLoadingId(null)
+      setPendingDeleteId(null)
       return
     }
 
-    setItems(items.filter(item => item.id !== id))
+    setItems(items.filter(item => item.id !== pendingDeleteId))
     setLoadingId(null)
+    setPendingDeleteId(null)
+    addToast('Message deleted.', 'success')
   }
 
   if (items.length === 0) {
@@ -80,7 +90,7 @@ export default function InboxList({ inquiries }: InboxListProps) {
                     View
                   </button>
                   <button
-                    onClick={() => handleDelete(inquiry.id)}
+                    onClick={() => handleDeleteClick(inquiry.id)}
                     disabled={loadingId === inquiry.id}
                     className="text-red-400 hover:text-red-300 text-sm font-medium disabled:opacity-50"
                   >
@@ -118,7 +128,7 @@ export default function InboxList({ inquiries }: InboxListProps) {
                 View Full
               </button>
               <button
-                onClick={() => handleDelete(inquiry.id)}
+                onClick={() => handleDeleteClick(inquiry.id)}
                 disabled={loadingId === inquiry.id}
                 className="text-red-400 hover:text-red-300 text-sm font-medium disabled:opacity-50"
               >
@@ -150,7 +160,6 @@ export default function InboxList({ inquiries }: InboxListProps) {
                 </svg>
               </button>
             </div>
-
             <div className="space-y-3">
               <div>
                 <p className="text-gray-400 text-xs uppercase tracking-wider">From</p>
@@ -173,7 +182,6 @@ export default function InboxList({ inquiries }: InboxListProps) {
                 </p>
               </div>
             </div>
-
             <div className="flex gap-3 mt-6 pt-4 border-t border-gray-700">
               <button
                 onClick={() => setSelectedMessage(null)}
@@ -185,7 +193,7 @@ export default function InboxList({ inquiries }: InboxListProps) {
                 onClick={() => {
                   const id = selectedMessage.id
                   setSelectedMessage(null)
-                  handleDelete(id)
+                  handleDeleteClick(id)
                 }}
                 className="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700 transition"
               >
@@ -195,6 +203,19 @@ export default function InboxList({ inquiries }: InboxListProps) {
           </div>
         </div>
       )}
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={showConfirm}
+        onClose={() => {
+          setShowConfirm(false)
+          setPendingDeleteId(null)
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Message"
+        message="Are you sure you want to delete this message? This cannot be undone."
+        confirmText="Delete"
+      />
     </>
   )
 }

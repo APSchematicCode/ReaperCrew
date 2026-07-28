@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/context/ToastContext'
+import ConfirmModal from '@/components/ConfirmModal'
 import Image from 'next/image'
 
 type Review = {
@@ -20,6 +22,9 @@ export default function ReviewsList() {
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'pending' | 'approved'>('pending')
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const { addToast } = useToast()
 
   const fetchReviews = async () => {
     setLoading(true)
@@ -36,28 +41,50 @@ export default function ReviewsList() {
   }, [])
 
   const handleApprove = async (id: string) => {
-    await supabase
+    const { error } = await supabase
       .from('reviews')
       .update({ is_approved: true })
       .eq('id', id)
-    fetchReviews()
+    if (error) {
+      addToast(`Failed to approve: ${error.message}`, 'error')
+    } else {
+      addToast('Review approved.', 'success')
+      fetchReviews()
+    }
   }
 
   const handleRevoke = async (id: string) => {
-    await supabase
+    const { error } = await supabase
       .from('reviews')
       .update({ is_approved: false })
       .eq('id', id)
-    fetchReviews()
+    if (error) {
+      addToast(`Failed to revoke: ${error.message}`, 'error')
+    } else {
+      addToast('Review revoked.', 'success')
+      fetchReviews()
+    }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this review?')) return
-    await supabase
+  const handleDeleteClick = (id: string) => {
+    setPendingDeleteId(id)
+    setShowConfirm(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteId) return
+    const { error } = await supabase
       .from('reviews')
       .delete()
-      .eq('id', id)
-    fetchReviews()
+      .eq('id', pendingDeleteId)
+    if (error) {
+      addToast(`Failed to delete: ${error.message}`, 'error')
+      setPendingDeleteId(null)
+    } else {
+      addToast('Review deleted.', 'success')
+      setPendingDeleteId(null)
+      fetchReviews()
+    }
   }
 
   const pendingReviews = reviews.filter(r => !r.is_approved)
@@ -67,7 +94,7 @@ export default function ReviewsList() {
   if (loading) return <div className="text-gray-400 p-6">Loading reviews...</div>
 
   return (
-    <div>
+    <>
       <div className="flex gap-4 mb-4 border-b border-gray-700 pb-2">
         <button
           onClick={() => setActiveTab('pending')}
@@ -88,9 +115,7 @@ export default function ReviewsList() {
       </div>
 
       {filteredReviews.length === 0 ? (
-        <div className="text-gray-400 p-6 text-center">
-          No {activeTab} reviews.
-        </div>
+        <div className="text-gray-400 p-6 text-center">No {activeTab} reviews.</div>
       ) : (
         <div className="space-y-4">
           {filteredReviews.map((review) => (
@@ -131,7 +156,7 @@ export default function ReviewsList() {
                     </button>
                   )}
                   <button
-                    onClick={() => handleDelete(review.id)}
+                    onClick={() => handleDeleteClick(review.id)}
                     className="bg-red-700 hover:bg-red-600 text-white px-4 py-1.5 rounded text-sm font-medium"
                   >
                     Delete
@@ -142,6 +167,18 @@ export default function ReviewsList() {
           ))}
         </div>
       )}
-    </div>
+
+      <ConfirmModal
+        isOpen={showConfirm}
+        onClose={() => {
+          setShowConfirm(false)
+          setPendingDeleteId(null)
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Review"
+        message="Are you sure you want to delete this review? This cannot be undone."
+        confirmText="Delete"
+      />
+    </>
   )
 }

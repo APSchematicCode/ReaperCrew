@@ -3,26 +3,44 @@
 import { useState, useEffect } from 'react'
 import { useCart } from '@/context/CartContext'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/context/ToastContext'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useToast } from '@/context/ToastContext'
 
-
-export const revalidate = 0
-
-const SHIPPING_FEE_DOLLARS = 14.99
 const SHIPPING_TIME = "2-3 business days"
-const SHIPPING_FEE_CENTS = Math.round(SHIPPING_FEE_DOLLARS * 100)
-
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart, totalPrice } = useCart()
+  const { addToast } = useToast()
   const [couponCode, setCouponCode] = useState('')
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; type: 'percentage' | 'fixed' } | null>(null)
   const [couponError, setCouponError] = useState('')
   const [isApplying, setIsApplying] = useState(false)
-  const { addToast } = useToast()
+  const [shippingFeeCents, setShippingFeeCents] = useState(1499) // Default $14.99
+  const [loading, setLoading] = useState(true)
 
+  // ✅ Fetch shipping fee from Supabase
+  useEffect(() => {
+    const fetchShippingFee = async () => {
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'shipping_fee_cents')
+        .single()
+
+      if (error) {
+        console.error('Failed to fetch shipping fee:', error)
+        // Keep default value
+      } else if (data) {
+        setShippingFeeCents(parseInt(data.value) || 1499)
+      }
+      setLoading(false)
+    }
+
+    fetchShippingFee()
+  }, [])
+
+  // ✅ Check for canceled checkout
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     if (params.get('canceled') === 'true') {
@@ -30,7 +48,9 @@ export default function CartPage() {
       window.history.replaceState({}, '', '/cart')
     }
   }, [addToast])
-  
+
+  // ... rest of your cart logic (applyCoupon, handleCheckout, etc.)
+
   if (items.length === 0) {
     return (
       <main className="min-h-screen bg-black flex flex-col items-center justify-center px-4">
@@ -42,6 +62,11 @@ export default function CartPage() {
       </main>
     )
   }
+
+  const subtotal = totalPrice
+  const shipping = shippingFeeCents
+  const discount = appliedCoupon?.discount || 0
+  const total = subtotal + shipping - discount
 
   const applyCoupon = async () => {
     setCouponError('')
@@ -59,33 +84,30 @@ export default function CartPage() {
       return
     }
 
-    // Check expiration
     if (data.expires_at && new Date(data.expires_at) < new Date()) {
       setCouponError('This coupon has expired.')
       setIsApplying(false)
       return
     }
 
-    // Check usage limit
     if (data.usage_limit > 0 && data.used_count >= data.usage_limit) {
       setCouponError('This coupon has reached its usage limit.')
       setIsApplying(false)
       return
     }
 
-    let discount = 0
+    let discountAmount = 0
     if (data.type === 'percentage') {
-      discount = totalPrice * (data.value / 100)
+      discountAmount = totalPrice * (data.value / 100)
     } else {
-      discount = data.value // already in cents
+      discountAmount = data.value
     }
 
-    // Cap discount to not exceed subtotal
-    if (discount > totalPrice) discount = totalPrice
+    if (discountAmount > totalPrice) discountAmount = totalPrice
 
     setAppliedCoupon({
       code: data.code,
-      discount: discount,
+      discount: discountAmount,
       type: data.type,
     })
     setIsApplying(false)
@@ -96,10 +118,43 @@ export default function CartPage() {
     setCouponCode('')
   }
 
-  const subtotal = totalPrice
-  const shipping = SHIPPING_FEE_CENTS
-  const discount = appliedCoupon?.discount || 0
-  const total = subtotal + shipping - discount
+  const handleCheckout = async () => {
+    if (items.length === 0) {
+      addToast('Your cart is empty.', 'error')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: items,
+          totalCents: total,
+          couponCode: appliedCoupon?.code || null,
+          discountCents: appliedCoupon?.discount || 0,
+          shippingCents: shippingFeeCents,
+        }),
+      })
+
+      const data = await response.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        addToast(data.error || 'Failed to start checkout.', 'error')
+      }
+    } catch (error) {
+      addToast('An error occurred during checkout.', 'error')
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-gray-400">Loading cart...</div>
+      </main>
+    )
+  }
 
   return (
     <main className="min-h-screen bg-black py-12 px-4 sm:px-6 lg:px-8">
@@ -217,43 +272,11 @@ export default function CartPage() {
               Clear Cart
             </button>
             <button
-              onClick={async () => {
-              // Check if cart is empty
-                if (items.length === 0) {
-                  addToast('Your cart is empty.', 'error')
-                  return
-                }
-
-                try {
-                  const response = await fetch('/api/create-checkout-session', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    items: items,
-                    totalCents: totalPrice,
-                    couponCode: appliedCoupon?.code || null,
-                    discountCents: appliedCoupon?.discount || 0,
-                    shippingCents: SHIPPING_FEE_CENTS,
-                    }),
-                })
-
-          const data = await response.json()
-            if (data.url) {
-              // Redirect to Stripe Checkout
-              window.location.href = data.url
-              // Clear cart locally (it will be cleared on success page via webhook, but we can do it now)
-              // However, we will clear it on the success page instead to avoid race conditions.
-            } else {
-              addToast(data.error || 'Failed to start checkout.', 'error')
-              }
-          } catch (error) {
-              addToast('An error occurred during checkout.', 'error')
-                }
-             }}
-          className="bg-white text-black px-6 py-3 rounded font-medium hover:bg-gray-200 transition flex-1 sm:flex-none"
-          >
-      Proceed to Checkout
-    </button>
+              onClick={handleCheckout}
+              className="bg-white text-black px-6 py-3 rounded font-medium hover:bg-gray-200 transition flex-1 sm:flex-none"
+            >
+              Proceed to Checkout
+            </button>
           </div>
         </div>
       </div>

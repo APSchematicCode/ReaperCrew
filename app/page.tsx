@@ -3,6 +3,8 @@ import Header from '@/components/Header'
 import ProductGrid from '@/components/ProductGrid'
 import Slideshow from '@/components/Slideshow'
 
+
+
 export default async function Home() {
   // ✅ Top 3 products by popularity (highest first)
   const { data: products, error: productsError } = await supabase
@@ -31,3 +33,5 @@ export default async function Home() {
     </main>
   )
 }
+// ✅ Force fresh data on every request (No caching)
+export const revalidate = 0

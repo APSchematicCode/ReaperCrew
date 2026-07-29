@@ -3,6 +3,9 @@ import Header from '@/components/Header'
 import ProductGrid from '@/components/ProductGrid'
 import { redirect } from 'next/navigation'
 
+
+
+
 interface SearchParams {
   search?: string
   type?: string

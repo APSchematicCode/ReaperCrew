@@ -4,6 +4,9 @@ import ProductGrid from '@/components/ProductGrid'
 import Slideshow from '@/components/Slideshow'
 
 
+export const revalidate = 0
+
+
 
 export default async function Home() {
   // ✅ Top 3 products by popularity (highest first)
@@ -33,5 +36,3 @@ export default async function Home() {
     </main>
   )
 }
-// ✅ Force fresh data on every request (No caching)
-export const revalidate = 0

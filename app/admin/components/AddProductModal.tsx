@@ -26,7 +26,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
   const [error, setError] = useState('')
   const [uploadProgress, setUploadProgress] = useState('')
   const [imageMetadata, setImageMetadata] = useState<ImageMetadata>({})
-  const [outOfStock, setOutOfStock] = useState(false) // ✅ New state
+  const [outOfStock, setOutOfStock] = useState(false)
 
   if (!isOpen) return null
 
@@ -53,11 +53,14 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
 
   const addVariant = () => setVariants([...variants, { key: '', value: 0 }])
   const removeVariant = (index: number) => setVariants(variants.filter((_, i) => i !== index))
+  
+  // ✅ CAPITALIZATION FIX: Forces first letter of variant key to uppercase
   const updateVariantKey = (index: number, key: string) => {
     const newVariants = [...variants]
-    newVariants[index].key = key
+    newVariants[index].key = key.charAt(0).toUpperCase() + key.slice(1)
     setVariants(newVariants)
   }
+
   const updateVariantValue = (index: number, value: number) => {
     const newVariants = [...variants]
     const finalValue = productType === 'service' ? Math.round(value * 100) : value
@@ -132,7 +135,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
       variants_json: variantsJson,
       popularity: popularity,
       image_metadata: metadata,
-      out_of_stock: outOfStock, // ✅ Added
+      out_of_stock: outOfStock,
     })
 
     if (insertError) {
@@ -215,6 +218,9 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
                   onChange={(e) => updateVariantValue(index, parseFloat(e.target.value) || 0)}
                   className="w-1/3 px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500"
                 />
+                <span className={`text-xs font-semibold px-2 py-1 rounded ${variant.value <= 0 ? 'bg-red-900/50 text-red-300' : 'bg-green-900/50 text-green-300'}`}>
+                  {variant.value <= 0 ? 'OOS' : 'In Stock'}
+                </span>
                 <button type="button" onClick={() => removeVariant(index)} className="text-red-400 hover:text-red-300 text-sm">✕</button>
               </div>
             ))}
@@ -241,7 +247,6 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
             )}
           </div>
 
-          {/* ✅ Out of Stock Checkbox */}
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -250,7 +255,7 @@ export default function AddProductModal({ isOpen, onClose, onProductAdded }: Add
               onChange={(e) => setOutOfStock(e.target.checked)}
               className="w-4 h-4"
             />
-            <label htmlFor="outOfStock" className="text-sm text-gray-300">Mark as Out of Stock</label>
+            <label htmlFor="outOfStock" className="text-sm text-gray-300">Mark entire product as Out of Stock (overrides variants)</label>
           </div>
 
           <div className="flex items-center gap-2">

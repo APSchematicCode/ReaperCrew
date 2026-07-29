@@ -20,7 +20,7 @@ interface EditProductModalProps {
     popularity?: number
     image_metadata?: Record<string, { width: number; height: number }>
     out_of_stock?: boolean
-    specifications?: Record<string, string> // ✅ Added
+    specifications?: Record<string, string>
   } | null
 }
 
@@ -41,7 +41,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
   const [error, setError] = useState('')
   const [imageMetadata, setImageMetadata] = useState<ImageMetadata>({})
   const [outOfStock, setOutOfStock] = useState(false)
-  const [specifications, setSpecifications] = useState<Record<string, string>>({}) // ✅ State
+  const [specifications, setSpecifications] = useState<Record<string, string>>({})
 
   const isService = productType === 'service'
 
@@ -57,7 +57,14 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
       setPopularity(product.popularity || 0)
       setImageMetadata(product.image_metadata || {})
       setOutOfStock(product.out_of_stock || false)
-      setSpecifications(product.specifications || {}) // ✅ Load
+      setSpecifications(product.specifications || {})
+
+      if (product.variants_json) {
+        const entries = Object.entries(product.variants_json)
+        setVariants(entries.map(([key, value]) => ({ key, value: value as number })))
+      } else {
+        setVariants([])
+      }
     }
   }, [product])
 
@@ -93,11 +100,14 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
 
   const addVariant = () => setVariants([...variants, { key: '', value: 0 }])
   const removeVariant = (index: number) => setVariants(variants.filter((_, i) => i !== index))
+  
+  // ✅ CAPITALIZATION FIX: Forces first letter of variant key to uppercase
   const updateVariantKey = (index: number, key: string) => {
     const newVariants = [...variants]
-    newVariants[index].key = key
+    newVariants[index].key = key.charAt(0).toUpperCase() + key.slice(1)
     setVariants(newVariants)
   }
+
   const updateVariantValue = (index: number, value: number) => {
     const newVariants = [...variants]
     const finalValue = isService ? Math.round(value * 100) : value
@@ -173,7 +183,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
         popularity: popularity,
         image_metadata: finalMetadata,
         out_of_stock: outOfStock,
-        specifications: specifications, // ✅ Include
+        specifications: specifications,
       })
       .eq('id', product.id)
 
@@ -223,7 +233,6 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
             <input type="number" value={popularity} onChange={(e) => setPopularity(parseInt(e.target.value) || 0)} className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500" />
           </div>
 
-          {/* Specifications */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Specifications (JSON)</label>
             <textarea

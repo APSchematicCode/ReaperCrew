@@ -162,34 +162,37 @@ export default function CouponManager() {
         {coupons.length === 0 ? (
           <div className="text-gray-400 text-center p-6">No coupons created yet.</div>
         ) : (
+          // ✅ FIXED: Added overflow-x-auto and min-width for mobile scroll
           <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-gray-700 border-b border-gray-600">
-                <tr>
-                  <th className="px-4 py-2 text-sm text-gray-300">Code</th>
-                  <th className="px-4 py-2 text-sm text-gray-300">Type</th>
-                  <th className="px-4 py-2 text-sm text-gray-300">Value</th>
-                  <th className="px-4 py-2 text-sm text-gray-300">Uses</th>
-                  <th className="px-4 py-2 text-sm text-gray-300">Expires</th>
-                  <th className="px-4 py-2 text-sm text-gray-300 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {coupons.map((coupon) => (
-                  <tr key={coupon.id} className="border-b border-gray-700">
-                    <td className="px-4 py-2 text-white font-mono">{coupon.code}</td>
-                    <td className="px-4 py-2 text-gray-300 capitalize">{coupon.type}</td>
-                    <td className="px-4 py-2 text-gray-300">{coupon.type === 'fixed' ? `$${(coupon.value / 100).toFixed(2)}` : `${coupon.value}%`}</td>
-                    <td className="px-4 py-2 text-gray-300">{coupon.used_count}{coupon.usage_limit > 0 ? ` / ${coupon.usage_limit}` : ''}</td>
-                    <td className="px-4 py-2 text-gray-300">{coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString() : 'Never'}</td>
-                    <td className="px-4 py-2 text-right">
-                      <button onClick={() => setEditing(coupon)} className="text-blue-400 hover:text-blue-300 text-sm mr-3">Edit</button>
-                      <button onClick={() => handleDeleteClick(coupon.id)} className="text-red-400 hover:text-red-300 text-sm">Delete</button>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-150 text-left">
+                <thead className="bg-gray-700 border-b border-gray-600">
+                  <tr>
+                    <th className="px-4 py-2 text-sm text-gray-300">Code</th>
+                    <th className="px-4 py-2 text-sm text-gray-300">Type</th>
+                    <th className="px-4 py-2 text-sm text-gray-300">Value</th>
+                    <th className="px-4 py-2 text-sm text-gray-300">Uses</th>
+                    <th className="px-4 py-2 text-sm text-gray-300">Expires</th>
+                    <th className="px-4 py-2 text-sm text-gray-300 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {coupons.map((coupon) => (
+                    <tr key={coupon.id} className="border-b border-gray-700">
+                      <td className="px-4 py-2 text-white font-mono">{coupon.code}</td>
+                      <td className="px-4 py-2 text-gray-300 capitalize">{coupon.type}</td>
+                      <td className="px-4 py-2 text-gray-300">{coupon.type === 'fixed' ? `$${(coupon.value / 100).toFixed(2)}` : `${coupon.value}%`}</td>
+                      <td className="px-4 py-2 text-gray-300">{coupon.used_count}{coupon.usage_limit > 0 ? ` / ${coupon.usage_limit}` : ''}</td>
+                      <td className="px-4 py-2 text-gray-300">{coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString() : 'Never'}</td>
+                      <td className="px-4 py-2 text-right">
+                        <button onClick={() => setEditing(coupon)} className="text-blue-400 hover:text-blue-300 text-sm mr-3">Edit</button>
+                        <button onClick={() => handleDeleteClick(coupon.id)} className="text-red-400 hover:text-red-300 text-sm">Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

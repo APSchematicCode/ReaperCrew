@@ -7,6 +7,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useToast } from '@/context/ToastContext'
 
+
+export const revalidate = 0
+
 const SHIPPING_FEE_DOLLARS = 14.99
 const SHIPPING_TIME = "2-3 business days"
 const SHIPPING_FEE_CENTS = Math.round(SHIPPING_FEE_DOLLARS * 100)

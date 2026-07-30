@@ -30,7 +30,7 @@ export default async function AccountPage() {
       <Header />
       <div className="flex-1 max-w-4xl mx-auto px-4 py-12 w-full">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-unifraktur text-white">My Account</h1>
+          <h1 className="text-3xl font-old-english text-white">My Account</h1>
           <form action={handleLogout}>
             <button type="submit" className="text-red-400 hover:text-red-300 text-sm">
               Logout
@@ -42,7 +42,7 @@ export default async function AccountPage() {
           <p className="text-gray-300">Signed in as <span className="text-white font-medium">{session.user.email}</span></p>
         </div>
 
-        <h2 className="text-2xl font-unifraktur text-white mb-4">Order History</h2>
+        <h2 className="text-2xl font-old-english text-white mb-4">Order History</h2>
         {orders && orders.length > 0 ? (
           <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
             <table className="w-full text-left">

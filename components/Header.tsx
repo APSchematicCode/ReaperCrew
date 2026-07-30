@@ -12,9 +12,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-black/90 backdrop-blur-sm border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="text-3xl font-unifraktur tracking-wider text-white hover:text-gray-300 transition">
-            Reaper Crew
-          </Link>
+          <Link href="/" className="text-3xl font-old-english tracking-wider text-white hover:text-gray-300 transition"> Reaper Crew</Link>
 
           <nav className="hidden md:flex items-center space-x-6">
             <Link href="/shop" className="text-gray-300 hover:text-white transition">Shop</Link>

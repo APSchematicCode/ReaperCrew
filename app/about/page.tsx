@@ -6,7 +6,7 @@ export default function AboutPage() {
     <main className="min-h-screen bg-black flex flex-col">
       <Header />
       <div className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <h1 className="text-4xl md:text-5xl font-unifraktur text-white mb-6">About Reaper Crew</h1>
+        <h1 className="text-4xl md:text-5xl font-old-english text-white mb-6">About Reaper Crew</h1>
         
         <div className="prose prose-invert prose-lg max-w-none">
           <p className="text-gray-300 text-lg leading-relaxed">
@@ -28,7 +28,7 @@ export default function AboutPage() {
           </p>
           
           <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6 mt-8">
-            <h2 className="text-2xl font-unifraktur text-white mb-2">Built Different.</h2>
+            <h2 className="text-2xl font-old-english text-white mb-2">Built Different.</h2>
             <p className="text-gray-300">
               We're not just a brand—we're a crew. Every stitch, every frame, every detail is 
               handled with the same intensity we bring to the field. If you're looking for mass‑produced 

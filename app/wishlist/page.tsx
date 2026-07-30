@@ -22,7 +22,7 @@ export default async function WishlistPage() {
     <main className="min-h-screen bg-black flex flex-col">
       <Header />
       <div className="flex-1 max-w-7xl mx-auto px-4 py-12 w-full">
-        <h1 className="text-3xl font-unifraktur text-white mb-8">My Wishlist</h1>
+        <h1 className="text-3xl font-old-english text-white mb-8">My Wishlist</h1>
 
         {!wishlist || wishlist.length === 0 ? (
           <div className="text-gray-400 text-center py-16">

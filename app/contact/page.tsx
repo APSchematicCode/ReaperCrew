@@ -41,7 +41,7 @@ export default function ContactPage() {
     <main className="min-h-screen bg-black flex flex-col">
       <Header />
       <div className="flex-1 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
-        <h1 className="text-4xl md:text-5xl font-unifraktur text-white mb-4">Contact</h1>
+        <h1 className="text-4xl md:text-5xl font-old-english text-white mb-4">Contact</h1>
         <p className="text-gray-400 text-lg mb-8">
           Have questions about our gear or want to book a media package? Reach out below.
           <br className="hidden sm:block" />

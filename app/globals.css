@@ -29,10 +29,7 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-@font-face {
-  font-family: 'UnifrakturMaguntia';
-  src: url('/fonts/unifrakturmaguntia.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+
+.font-old-english {
+  font-family: var(--font-unifraktur), cursive;
 }

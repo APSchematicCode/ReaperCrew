@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { UnifrakturMaguntia } from 'next/font/google'; // ✅ Added
 import "./globals.css";
-import '@fontsource/unifrakturmaguntia'
 import { CartProvider } from '@/context/CartContext'
-import { ToastProvider } from '@/context/ToastContext' // ✅ Import
-import ToastContainer from '@/components/Toast'        // ✅ Import
+import { ToastProvider } from '@/context/ToastContext'
+import ToastContainer from '@/components/Toast'
 import Footer from '@/components/Footer'
 
 const geistSans = Geist({
@@ -17,6 +17,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// ✅ Configure the Old English font
+const unifrakturMaguntia = UnifrakturMaguntia({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-unifraktur',
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
   title: "Reaper Crew",
   description: "Tactical gear and media packages",
@@ -24,16 +32,16 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} dark`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${unifrakturMaguntia.variable} dark`}>
       <body className="bg-black text-white antialiased flex flex-col min-h-screen">
-        <ToastProvider>  {/* ✅ Wrap everything */}
+        <ToastProvider>
           <CartProvider>
             {children}
-            <ToastContainer /> {/* ✅ Renders toasts */}
+            <ToastContainer />
             <Footer />
           </CartProvider>
         </ToastProvider>
       </body>
     </html>
-  )
+  );
 }

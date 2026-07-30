@@ -52,7 +52,7 @@ export default async function ShopPage({
     <main className="min-h-screen bg-black">
       <Header />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="text-4xl font-unifraktur text-white mb-4">Shop</h1>
+        <h1 className="text-4xl font-old-english text-white mb-4">Shop</h1>
         <p className="text-gray-400 mb-8">Browse our gear and media packages.</p>
 
         {/* Filter & Search Bar */}

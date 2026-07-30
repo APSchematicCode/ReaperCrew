@@ -54,7 +54,7 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <main className="min-h-screen bg-black flex flex-col items-center justify-center px-4">
-        <h1 className="text-3xl font-unifraktur text-white mb-4">Your Cart</h1>
+        <h1 className="text-3xl font-old-english text-white mb-4">Your Cart</h1>
         <p className="text-gray-400 mb-6">Your cart is empty.</p>
         <Link href="/shop" className="bg-white text-black px-6 py-3 rounded font-medium hover:bg-gray-200 transition">
           Start Shopping
@@ -168,7 +168,7 @@ export default function CartPage() {
           </Link>
         </div>
 
-        <h1 className="text-3xl font-unifraktur text-white mb-8">Shopping Cart</h1>
+        <h1 className="text-3xl font-old-english text-white mb-8">Shopping Cart</h1>
 
         <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
           <ul className="divide-y divide-gray-800">

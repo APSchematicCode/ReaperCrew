@@ -25,7 +25,7 @@ export default function Slideshow({ slides }: { slides: Slide[] }) {
       })
     ]
   )
-  const [containerHeight, setContainerHeight] = useState<number>(400) // fallback
+  const [containerHeight, setContainerHeight] = useState<number>(400)
   const containerRef = useRef<HTMLDivElement>(null)
   const [isReady, setIsReady] = useState(false)
 
@@ -34,7 +34,6 @@ export default function Slideshow({ slides }: { slides: Slide[] }) {
     const index = emblaApi.selectedScrollSnap()
     const slide = slides[index]
     if (slide && slide.width && slide.height) {
-      // Get the actual width of the container
       const containerWidth = containerRef.current.clientWidth
       const aspectRatio = slide.width / slide.height
       const calculatedHeight = containerWidth / aspectRatio
@@ -44,16 +43,12 @@ export default function Slideshow({ slides }: { slides: Slide[] }) {
 
   useEffect(() => {
     if (!emblaApi) return
-
-    // Initial height update
     setTimeout(() => {
       updateHeight()
       setIsReady(true)
     }, 100)
-
     emblaApi.on('select', updateHeight)
     window.addEventListener('resize', updateHeight)
-
     return () => {
       emblaApi.off('select', updateHeight)
       window.removeEventListener('resize', updateHeight)
@@ -66,36 +61,43 @@ export default function Slideshow({ slides }: { slides: Slide[] }) {
 
   return (
     <div className="w-full overflow-hidden bg-black">
-      <div
-        ref={containerRef}
-        className="relative w-full transition-[height] duration-500 ease-in-out"
-        style={{ height: isReady ? containerHeight : 'auto' }}
-      >
-        <div className="overflow-hidden h-full" ref={emblaRef}>
-          <div className="flex h-full">
-            {slides.map((slide) => (
-              <div key={slide.id} className="flex-[0_0_100%] min-w-0 relative h-full">
-                {slide.link_url ? (
-                  <a href={slide.link_url} className="block w-full h-full">
+      {/* ✅ ADDED: max-w-6xl + mx-auto on desktop to prevent pixelation */}
+      <div className="max-w-6xl mx-auto px-0 md:px-4">
+        <div
+          ref={containerRef}
+          className="relative w-full transition-[height] duration-500 ease-in-out"
+          style={{ height: isReady ? containerHeight : 'auto' }}
+        >
+          <div className="overflow-hidden h-full rounded-none md:rounded-lg" ref={emblaRef}>
+            <div className="flex h-full">
+              {slides.map((slide) => (
+                <div key={slide.id} className="flex-[0_0_100%] min-w-0 relative h-full">
+                  {slide.link_url ? (
+                    <a href={slide.link_url} className="block w-full h-full">
+                      <Image
+                        src={slide.image_url}
+                        alt="Slide"
+                        fill
+                        className="object-contain"
+                        priority
+                        sizes="(max-width: 768px) 100vw, 90vw"
+                        quality={90}
+                      />
+                    </a>
+                  ) : (
                     <Image
                       src={slide.image_url}
                       alt="Slide"
                       fill
                       className="object-contain"
                       priority
+                      sizes="(max-width: 768px) 100vw, 90vw"
+                      quality={90}
                     />
-                  </a>
-                ) : (
-                  <Image
-                    src={slide.image_url}
-                    alt="Slide"
-                    fill
-                    className="object-contain"
-                    priority
-                  />
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

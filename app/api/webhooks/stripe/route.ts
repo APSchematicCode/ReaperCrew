@@ -24,6 +24,8 @@ function getSupabase() {
 export async function POST(req: Request) {
   const rawBody = await req.text()
   const signature = req.headers.get('stripe-signature')!
+  console.log('Webhook received. Signature:', signature)
+  console.log('Raw body length:', rawBody.length)
 
   let event
 

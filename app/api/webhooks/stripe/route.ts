@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
-// ✅ Lazy initializers for Stripe and Supabase
 function getStripe() {
   if (!process.env.STRIPE_SECRET_KEY) {
     throw new Error('STRIPE_SECRET_KEY is not set')
@@ -12,7 +11,7 @@ function getStripe() {
   })
 }
 
-function getSupabase() {
+function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) {
@@ -24,8 +23,6 @@ function getSupabase() {
 export async function POST(req: Request) {
   const rawBody = await req.text()
   const signature = req.headers.get('stripe-signature')!
-  console.log('Webhook received. Signature:', signature)
-  console.log('Raw body length:', rawBody.length)
 
   let event
 
@@ -44,37 +41,51 @@ export async function POST(req: Request) {
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session
-      const orderId = session.metadata?.order_id
+      const meta = session.metadata
 
-      if (!orderId) {
-        console.error('No order_id in session metadata')
-        return NextResponse.json({ error: 'Missing order_id' }, { status: 400 })
+      if (!meta || !meta.items_json) {
+        console.error('Missing order metadata in session')
+        return NextResponse.json({ error: 'Missing order data' }, { status: 400 })
       }
 
-      const shippingAddress = (session as any).shipping?.address || null
-
-      // ✅ Lazy Supabase – only created when we actually need to update
       try {
-        const supabase = getSupabase()
-        const { error: updateError } = await supabase
-          .from('orders')
-          .update({
-            status: 'paid',
-            stripe_payment_intent_id: session.payment_intent,
-            customer_email: session.customer_details?.email || session.customer_email,
-            customer_name: session.customer_details?.name || null,
-            shipping_address: shippingAddress,
-          })
-          .eq('id', orderId)
+        const supabase = getSupabaseAdmin()
 
-        if (updateError) {
-          console.error('Failed to update order:', updateError)
-          return NextResponse.json({ error: 'Failed to update order' }, { status: 500 })
+        // ✅ Parse order data from metadata
+        const items = JSON.parse(meta.items_json)
+        const totalCents = parseInt(meta.total_cents)
+        const discountCents = parseInt(meta.discount_cents || '0')
+        const couponCode = meta.coupon_code || null
+        const originalTotal = parseInt(meta.original_total || String(totalCents + discountCents))
+        const shippingCents = parseInt(meta.shipping_cents || '0')
+
+        const orderData = {
+          customer_email: session.customer_details?.email || session.customer_email || 'guest@example.com',
+          customer_name: session.customer_details?.name || 'Guest',
+          items_json: items,
+          total_cents: totalCents,
+          original_total_cents: originalTotal,
+          discount_cents: discountCents,
+          coupon_code: couponCode,
+          stripe_payment_intent_id: session.payment_intent,
+          shipping_address: (session as any).shipping?.address || null,
+          status: 'paid',
         }
 
-        console.log(`✅ Order ${orderId} marked as paid.`)
+        const { data: order, error: insertError } = await supabase
+          .from('orders')
+          .insert(orderData)
+          .select()
+          .single()
+
+        if (insertError) {
+          console.error('Failed to insert order:', insertError)
+          return NextResponse.json({ error: 'Failed to insert order' }, { status: 500 })
+        }
+
+        console.log(`✅ Order ${order.id} created and marked as paid.`)
       } catch (err: any) {
-        console.error('Supabase initialization error:', err.message)
+        console.error('Error processing webhook:', err.message)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
       }
       break

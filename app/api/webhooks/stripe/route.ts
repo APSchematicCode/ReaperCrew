@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       const session = event.data.object as Stripe.Checkout.Session
       const meta = session.metadata
 
-      if (!meta || !meta.items_json) {
+      if (!meta || !meta.items) {
         console.error('Missing order metadata in session')
         return NextResponse.json({ error: 'Missing order data' }, { status: 400 })
       }
@@ -51,8 +51,33 @@ export async function POST(req: Request) {
       try {
         const supabase = getSupabaseAdmin()
 
-        // ✅ Parse order data from metadata
-        const items = JSON.parse(meta.items_json)
+        // Parse compact items: [{id, variant, qty}]
+        const compactItems = JSON.parse(meta.items)
+        const productIds = compactItems.map((item: any) => item.id)
+
+        // Fetch product details from Supabase
+        const { data: products, error: fetchError } = await supabase
+          .from('products')
+          .select('id, name, price, product_type')
+          .in('id', productIds)
+
+        if (fetchError) {
+          console.error('Failed to fetch products:', fetchError)
+          return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 })
+        }
+
+        // Build full items with prices
+        const fullItems = compactItems.map((ci: any) => {
+          const product = products?.find((p: any) => p.id === ci.id)
+          return {
+            id: ci.id,
+            name: product?.name || 'Unknown Product',
+            variant: ci.variant,
+            price: product?.price || 0,
+            quantity: ci.qty,
+          }
+        })
+
         const totalCents = parseInt(meta.total_cents)
         const discountCents = parseInt(meta.discount_cents || '0')
         const couponCode = meta.coupon_code || null
@@ -62,7 +87,7 @@ export async function POST(req: Request) {
         const orderData = {
           customer_email: session.customer_details?.email || session.customer_email || 'guest@example.com',
           customer_name: session.customer_details?.name || 'Guest',
-          items_json: items,
+          items_json: fullItems,
           total_cents: totalCents,
           original_total_cents: originalTotal,
           discount_cents: discountCents,

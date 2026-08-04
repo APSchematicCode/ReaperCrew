@@ -21,6 +21,7 @@ export async function POST(req: Request) {
 
     const stripe = getStripe()
 
+    // Build Stripe line items
     const lineItems = items.map((item: any) => {
       const unitPrice = Math.round(item.price)
       return {
@@ -47,11 +48,12 @@ export async function POST(req: Request) {
     }
 
     if (discountCents && discountCents > 0) {
+      const discountInteger = Math.round(discountCents) // ✅ Round to integer
       lineItems.push({
         price_data: {
           currency: 'usd',
           product_data: { name: `Discount ${couponCode ? `(${couponCode})` : ''}` },
-          unit_amount: -discountCents,
+          unit_amount: -discountInteger,
         },
         quantity: 1,
       })
@@ -60,7 +62,13 @@ export async function POST(req: Request) {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 
-    // ✅ Send all order data as metadata
+    // ✅ Compact metadata: only IDs, variant, quantity
+    const compactItems = items.map((item: any) => ({
+      id: item.id,
+      variant: item.variant,
+      qty: item.quantity,
+    }))
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
@@ -68,12 +76,12 @@ export async function POST(req: Request) {
       success_url: `${baseUrl}/order/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/cart?canceled=true`,
       metadata: {
-        items_json: JSON.stringify(items),
-        total_cents: String(totalCents),
-        discount_cents: String(discountCents || 0),
+        items: JSON.stringify(compactItems),
+        total_cents: String(Math.round(totalCents)),
+        discount_cents: String(Math.round(discountCents || 0)),
         coupon_code: couponCode || '',
-        original_total: String(totalCents + (discountCents || 0)),
-        shipping_cents: String(shippingCents || 0),
+        original_total: String(Math.round(totalCents + (discountCents || 0))),
+        shipping_cents: String(Math.round(shippingCents || 0)),
       },
       shipping_address_collection: {
         allowed_countries: ['US', 'CA'],

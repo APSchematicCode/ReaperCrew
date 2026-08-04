@@ -21,7 +21,7 @@ export async function POST(req: Request) {
 
     const stripe = getStripe()
 
-    // Build Stripe line items
+    // 1. Build line items
     const lineItems = items.map((item: any) => {
       const unitPrice = Math.round(item.price)
       return {
@@ -47,22 +47,22 @@ export async function POST(req: Request) {
       })
     }
 
+    // 2. Handle discount by creating a Stripe coupon
+    let discounts: { coupon: string }[] = []
     if (discountCents && discountCents > 0) {
-      const discountInteger = Math.round(discountCents) // ✅ Round to integer
-      lineItems.push({
-        price_data: {
-          currency: 'usd',
-          product_data: { name: `Discount ${couponCode ? `(${couponCode})` : ''}` },
-          unit_amount: -discountInteger,
-        },
-        quantity: 1,
+      const coupon = await stripe.coupons.create({
+        amount_off: Math.round(discountCents),
+        currency: 'usd',
+        duration: 'once',
+        name: couponCode || 'Discount',
       })
+      discounts = [{ coupon: coupon.id }]
     }
 
+    // 3. Build the session
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 
-    // ✅ Compact metadata: only IDs, variant, quantity
     const compactItems = items.map((item: any) => ({
       id: item.id,
       variant: item.variant,
@@ -83,6 +83,7 @@ export async function POST(req: Request) {
         original_total: String(Math.round(totalCents + (discountCents || 0))),
         shipping_cents: String(Math.round(shippingCents || 0)),
       },
+      discounts: discounts.length > 0 ? discounts : undefined,
       shipping_address_collection: {
         allowed_countries: ['US', 'CA'],
       },

@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     const stripe = getStripe()
 
     const lineItems = items.map((item: any) => {
-      const unitPrice = Math.round(item.price / item.quantity)
+      const unitPrice = Math.round(item.price)
       return {
         price_data: {
           currency: 'usd',

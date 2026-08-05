@@ -13,6 +13,7 @@ import WaitlistList from '../components/WaitlistList'
 import CouponManager from '../components/CouponManager'
 import AnalyticsCards from '../components/AnalyticsCards'
 import ShippingSettings from '../components/ShippingSettings'
+import NewsletterSender from '../components/NewsletterSender'
 
 export const revalidate = 0
 
@@ -164,6 +165,11 @@ export default async function AdminDashboard() {
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-12">
           <ReviewsList />
         </div>
+
+        {/* NEWSLETTER */}
+        <h2 className="text-2xl font-unifraktur text-white mb-4 mt-12">Newsletter</h2>
+        <p className="text-gray-400 text-sm mb-4">Send a mass email to all subscribers.</p>
+        <NewsletterSender />
 
         {/* ===== COUPONS ===== */}
         <h2 className="text-2xl font-unifraktur text-white mb-4">Discount Codes</h2>

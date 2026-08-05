@@ -62,7 +62,7 @@ export async function sendOrderStatusEmail(
         'api-key': brevoKey,
       },
       body: JSON.stringify({
-        sender: { email: 'angelpersonal3@gmail.com', name: 'Reaper Crew' }, // Update this to noreply@reapercrew.com later
+        sender: { email: 'lasvegassc702@yahoo.com', name: 'Reaper Crew' }, // Update this to noreply@reapercrew.com later
         to: [{ email: customerEmail, name: customerName }],
         subject: `Order #${orderId.slice(0, 8)} Status: ${status.toUpperCase()}`,
         htmlContent,

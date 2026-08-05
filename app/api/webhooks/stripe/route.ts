@@ -60,7 +60,7 @@ async function sendOrderConfirmationEmail(customerEmail: string, customerName: s
         'api-key': brevoKey,
       },
       body: JSON.stringify({
-        sender: { email: 'angelpersonal3@gmail.com', name: 'Reaper Crew' },
+        sender: { email: 'lasvegassc702@yahoo.com', name: 'Reaper Crew' },
         to: [{ email: customerEmail, name: customerName }],
         subject: `Order Confirmation #${orderId.slice(0, 8)}`,
         htmlContent,

@@ -19,7 +19,6 @@ export default function NewsletterSender() {
   const { addToast } = useToast()
   const quillRef = useRef<ReactQuill>(null)
 
-  // ✅ Enable spell check on the editor after mount
   useEffect(() => {
     const quill = quillRef.current?.getEditor()
     if (quill) {
@@ -54,6 +53,7 @@ export default function NewsletterSender() {
     }
   }
 
+  // ✅ Removed alignment buttons – only left alignment is available
   const modules = {
     toolbar: {
       container: [

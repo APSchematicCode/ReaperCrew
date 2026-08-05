@@ -9,6 +9,12 @@ function chunkArray<T>(array: T[], size: number): T[][] {
   return chunks
 }
 
+// ✅ Helper to strip inline text-align styles
+function stripInlineAlign(html: string): string {
+  // Remove style="text-align: center" and similar
+  return html.replace(/style="[^"]*text-align\s*:\s*[^;"]*[;"]*/gi, '')
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = await createServerSupabaseClient()
@@ -54,7 +60,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'BREVO_API_KEY is not set' }, { status: 500 })
     }
 
-    // ✅ Build the email HTML with strong left-alignment and responsive images
+    // ✅ Strip inline alignment styles
+    const cleanedContent = stripInlineAlign(htmlContent)
+
+    // ✅ Build the email HTML with strong left‑alignment
     const emailHtml = `
 <!DOCTYPE html>
 <html>
@@ -80,7 +89,7 @@ export async function POST(req: Request) {
 </head>
 <body>
   <div class="container">
-    ${htmlContent}
+    ${cleanedContent}
   </div>
 </body>
 </html>
@@ -102,8 +111,8 @@ export async function POST(req: Request) {
             'api-key': brevoKey,
           },
           body: JSON.stringify({
-            // ✅ Use his verified sender email
-            sender: { email: 'lasvegassc702@yahoo.com', name: 'Reaper Crew' },
+            // ✅ Update this sender email to his verified Brevo sender
+            sender: { email: 'your-verified-sender@example.com', name: 'Reaper Crew' },
             to: to,
             subject: subject,
             htmlContent: emailHtml,

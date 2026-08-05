@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
+import { sendOrderStatusEmail } from '@/lib/email' // ✅ Import shared function
 
 function getStripe() {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -18,64 +19,6 @@ function getSupabaseAdmin() {
     throw new Error('Supabase URL or Service Role Key is missing')
   }
   return createClient(url, key)
-}
-
-
-
-async function sendOrderConfirmationEmail(customerEmail: string, customerName: string, orderId: string, items: any[], totalCents: number) {
-  const brevoKey = process.env.BREVO_API_KEY
-  if (!brevoKey) {
-    console.error('BREVO_API_KEY is not set – skipping email')
-    return
-  }
-
-  const itemsHtml = items.map((item) => `
-    <tr>
-      <td>${item.name} (${item.variant})</td>
-      <td>× ${item.quantity}</td>
-      <td>$${(item.price / 100).toFixed(2)}</td>
-    </tr>
-  `).join('')
-
-  const totalDollars = (totalCents / 100).toFixed(2)
-
-  const htmlContent = `
-    <h1>Thank you for your order, ${customerName}!</h1>
-    <p>Your order <strong>#${orderId.slice(0, 8)}</strong> has been confirmed.</p>
-    <h3>Order Summary</h3>
-    <table border="1" cellpadding="5">
-      <tr><th>Item</th><th>Qty</th><th>Price</th></tr>
-      ${itemsHtml}
-      <tr><td colspan="2"><strong>Total</strong></td><td><strong>$${totalDollars}</strong></td></tr>
-    </table>
-    <p>We'll notify you when your order ships.</p>
-    <p>– Reaper Crew</p>
-  `
-
-  try {
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'api-key': brevoKey,
-      },
-      body: JSON.stringify({
-        sender: { email: 'lasvegassc702@yahoo.com', name: 'Reaper Crew' },
-        to: [{ email: customerEmail, name: customerName }],
-        subject: `Order Confirmation #${orderId.slice(0, 8)}`,
-        htmlContent,
-      }),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Brevo email failed:', errorText)
-    } else {
-      console.log(`✅ Confirmation email sent to ${customerEmail}`)
-    }
-  } catch (err: any) {
-    console.error('Brevo error:', err.message)
-  }
 }
 
 export async function POST(req: Request) {
@@ -109,11 +52,9 @@ export async function POST(req: Request) {
       try {
         const supabase = getSupabaseAdmin()
 
-        // Parse compact items: [{id, variant, qty}]
         const compactItems = JSON.parse(meta.items)
         const productIds = compactItems.map((item: any) => item.id)
 
-        // Fetch product details from Supabase
         const { data: products, error: fetchError } = await supabase
           .from('products')
           .select('id, name, price, product_type')
@@ -124,7 +65,6 @@ export async function POST(req: Request) {
           return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 })
         }
 
-        // Build full items with prices
         const fullItems = compactItems.map((ci: any) => {
           const product = products?.find((p: any) => p.id === ci.id)
           return {
@@ -168,16 +108,16 @@ export async function POST(req: Request) {
 
         console.log(`✅ Order ${order.id} created and marked as paid.`)
 
-
-        await sendOrderConfirmationEmail(
+        // ✅ Send email using the shared function
+        await sendOrderStatusEmail(
           orderData.customer_email,
           orderData.customer_name || 'Customer',
           order.id,
+          'paid', // Status is always 'paid' here
           fullItems,
           totalCents
         )
 
-        
       } catch (err: any) {
         console.error('Error processing webhook:', err.message)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

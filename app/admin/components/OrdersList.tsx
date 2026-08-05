@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/context/ToastContext'
 
 type Order = {
   id: string
@@ -21,25 +22,35 @@ export default function OrdersList({ orders }: OrdersListProps) {
   const [items, setItems] = useState(orders)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const { addToast } = useToast()
 
   const updateStatus = async (id: string, newStatus: Order['status']) => {
-    setLoadingId(id)
-    const { error } = await supabase
-      .from('orders')
-      .update({ status: newStatus })
-      .eq('id', id)
+  setLoadingId(id)
 
-    if (error) {
-      alert('Failed to update status.')
-      setLoadingId(null)
-      return
+  try {
+    const response = await fetch('/api/orders/update-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId: id, newStatus }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to update status')
     }
 
+    // Update local state
     setItems(items.map(order =>
       order.id === id ? { ...order, status: newStatus } : order
     ))
+    addToast(`Order status updated to ${newStatus}.`, 'success')
+  } catch (error: any) {
+    addToast(`Failed to update status: ${error.message}`, 'error')
+  } finally {
     setLoadingId(null)
   }
+}
 
   const getStatusColor = (status: Order['status']) => {
     switch (status) {

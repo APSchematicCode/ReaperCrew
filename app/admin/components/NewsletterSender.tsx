@@ -19,10 +19,10 @@ export default function NewsletterSender() {
   const { addToast } = useToast()
   const quillRef = useRef<ReactQuill>(null)
 
-  // ✅ Helper to get the Quill editor instance
+  // Helper to get the Quill editor instance
   const getEditor = () => quillRef.current?.getEditor()
 
-  // ✅ Custom image handler that uses the ref
+  // Custom image handler that uses the ref
   const handleImageUpload = async (file: File) => {
     const quill = getEditor()
     if (!quill) {
@@ -45,7 +45,7 @@ export default function NewsletterSender() {
     }
   }
 
-  // ✅ Build the modules with a function that captures the ref
+  // Build the modules with a function that captures the ref
   const modules = {
     toolbar: {
       container: [
@@ -58,7 +58,6 @@ export default function NewsletterSender() {
       ],
       handlers: {
         image: function (this: any) {
-          // Use the file input to trigger upload
           const input = document.createElement('input')
           input.setAttribute('type', 'file')
           input.setAttribute('accept', 'image/*')
@@ -160,7 +159,7 @@ export default function NewsletterSender() {
           />
         </div>
 
-        {/* Rich Text Editor */}
+        {/* Rich Text Editor – images are constrained inside the editor */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">Message</label>
           <ReactQuill
@@ -169,7 +168,7 @@ export default function NewsletterSender() {
             value={content}
             onChange={setContent}
             modules={modules}
-            className="bg-black text-white rounded [&_.ql-toolbar]:border-gray-700 [&_.ql-container]:border-gray-700 [&_.ql-editor]:min-h-50 [&_.ql-editor]:text-white"
+            className="bg-black text-white rounded [&_.ql-toolbar]:border-gray-700 [&_.ql-container]:border-gray-700 [&_.ql-editor]:min-h-50 [&_.ql-editor]:text-white [&_.ql-editor_img]:max-w-full [&_.ql-editor_img]:h-auto"
             readOnly={loading}
           />
           <p className="text-gray-500 text-xs mt-1">

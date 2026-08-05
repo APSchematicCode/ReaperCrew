@@ -60,13 +60,36 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'BREVO_API_KEY is not set' }, { status: 500 })
     }
 
-    // 5. Chunk emails (Brevo allows 50 recipients per call)
+    // 5. Build the email HTML with image scaling and responsive container
+    const emailHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff; }
+    img { max-width: 100%; height: auto; display: block; }
+    p { margin: 0 0 10px 0; line-height: 1.6; }
+    h1, h2, h3 { margin: 0 0 10px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    ${htmlContent}
+  </div>
+</body>
+</html>
+    `
+
+    // 6. Chunk emails (Brevo allows 50 recipients per call)
     const chunks = chunkArray(emails, 50)
     let successCount = 0
     let failedCount = 0
     const errors: string[] = []
 
-    // 6. Send to each chunk
+    // 7. Send to each chunk
     for (const chunk of chunks) {
       const to = chunk.map((email) => ({ email }))
 
@@ -78,10 +101,11 @@ export async function POST(req: Request) {
             'api-key': brevoKey,
           },
           body: JSON.stringify({
-            sender: { email: 'lasvegassc702@yahoo.com', name: 'Reaper Crew' }, // ✅ Update this to his verified sender
+            // ✅ Update this sender email to his verified Brevo sender
+            sender: { email: 'noreply@reapercrew.com', name: 'Reaper Crew' },
             to: to,
             subject: subject,
-            htmlContent: htmlContent,
+            htmlContent: emailHtml,
           }),
         })
 

@@ -69,10 +69,12 @@ export async function POST(req: Request) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff; text-align: left;  }
     img { max-width: 100%; height: auto; display: block; }
     p { margin: 0 0 10px 0; line-height: 1.6; }
     h1, h2, h3 { margin: 0 0 10px 0; }
+    .ql-align-center { text-align: center; } /* ✅ Allows Quill's center alignment to still work */
+    .ql-align-right { text-align: right; }
   </style>
 </head>
 <body>

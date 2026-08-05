@@ -1,8 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/context/ToastContext'
+import ReactQuill from 'react-quill'
+import 'react-quill/dist/quill.snow.css'
+import { uploadImageToSupabase } from '@/lib/uploadImage'
 
 export default function NewsletterSender() {
   const [subject, setSubject] = useState('')
@@ -14,6 +17,63 @@ export default function NewsletterSender() {
     message: '',
   })
   const { addToast } = useToast()
+  const quillRef = useRef<ReactQuill>(null)
+
+  // ✅ Helper to get the Quill editor instance
+  const getEditor = () => quillRef.current?.getEditor()
+
+  // ✅ Custom image handler that uses the ref
+  const handleImageUpload = async (file: File) => {
+    const quill = getEditor()
+    if (!quill) {
+      addToast('Editor not ready. Please try again.', 'error')
+      return
+    }
+
+    const range = quill.getSelection()
+    if (!range) {
+      addToast('Please place your cursor where you want the image.', 'error')
+      return
+    }
+
+    const url = await uploadImageToSupabase(file, 'newsletter')
+    if (url) {
+      quill.insertEmbed(range.index, 'image', url)
+      quill.setSelection({ index: range.index + 1, length: 0 })
+    } else {
+      addToast('Failed to upload image. Please try again.', 'error')
+    }
+  }
+
+  // ✅ Build the modules with a function that captures the ref
+  const modules = {
+    toolbar: {
+      container: [
+        [{ header: [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        ['blockquote', 'code-block'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['link', 'image'],
+        ['clean'],
+      ],
+      handlers: {
+        image: function (this: any) {
+          // Use the file input to trigger upload
+          const input = document.createElement('input')
+          input.setAttribute('type', 'file')
+          input.setAttribute('accept', 'image/*')
+          input.onchange = async (e: Event) => {
+            const target = e.target as HTMLInputElement
+            const file = target.files?.[0]
+            if (file) {
+              await handleImageUpload(file)
+            }
+          }
+          input.click()
+        },
+      },
+    },
+  }
 
   useEffect(() => {
     const fetchCount = async () => {
@@ -33,7 +93,7 @@ export default function NewsletterSender() {
       addToast('Please enter a subject.', 'error')
       return
     }
-    if (!content.trim()) {
+    if (!content.trim() || content === '<p><br></p>') {
       addToast('Please enter the message content.', 'error')
       return
     }
@@ -47,7 +107,7 @@ export default function NewsletterSender() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subject: subject.trim(),
-          htmlContent: content.trim(),
+          htmlContent: content,
         }),
       })
 
@@ -87,6 +147,7 @@ export default function NewsletterSender() {
       </div>
 
       <div className="space-y-4">
+        {/* Subject */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">Subject</label>
           <input
@@ -99,23 +160,24 @@ export default function NewsletterSender() {
           />
         </div>
 
+        {/* Rich Text Editor */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">Message (HTML supported)</label>
-          <textarea
+          <label className="block text-sm font-medium text-gray-300 mb-1">Message</label>
+          <ReactQuill
+            ref={quillRef}
+            theme="snow"
             value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows={8}
-            placeholder="<p>Hello subscribers, check out our new gear!</p>"
-            className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500 font-mono text-sm"
-            disabled={loading}
+            onChange={setContent}
+            modules={modules}
+            className="bg-black text-white rounded [&_.ql-toolbar]:border-gray-700 [&_.ql-container]:border-gray-700 [&_.ql-editor]:min-h-50 [&_.ql-editor]:text-white"
+            readOnly={loading}
           />
           <p className="text-gray-500 text-xs mt-1">
-            You can use HTML tags like <code className="bg-gray-700 px-1 rounded">&lt;p&gt;</code>,{' '}
-            <code className="bg-gray-700 px-1 rounded">&lt;strong&gt;</code>,{' '}
-            <code className="bg-gray-700 px-1 rounded">&lt;a href=&quot;...&quot;&gt;</code>.
+            Use the toolbar to format text, add links, or insert images.
           </p>
         </div>
 
+        {/* Status */}
         {status.type !== 'idle' && (
           <div
             className={`px-4 py-2 rounded text-sm ${
@@ -130,6 +192,7 @@ export default function NewsletterSender() {
           </div>
         )}
 
+        {/* Send Button */}
         <button
           onClick={handleSend}
           disabled={loading || subscriberCount === 0}

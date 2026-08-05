@@ -78,7 +78,7 @@ export async function POST(req: Request) {
             'api-key': brevoKey,
           },
           body: JSON.stringify({
-            sender: { email: 'noreply@reapercrew.com', name: 'Reaper Crew' }, // ✅ Update this to his verified sender
+            sender: { email: 'lasvegassc702@yahoo.com', name: 'Reaper Crew' }, // ✅ Update this to his verified sender
             to: to,
             subject: subject,
             htmlContent: htmlContent,

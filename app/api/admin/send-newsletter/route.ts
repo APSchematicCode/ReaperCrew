@@ -103,7 +103,7 @@ export async function POST(req: Request) {
           },
           body: JSON.stringify({
             // ✅ Use his verified sender email
-            sender: { email: 'your-verified-sender@example.com', name: 'Reaper Crew' },
+            sender: { email: 'lasvegassc702@yahoo.com', name: 'Reaper Crew' },
             to: to,
             subject: subject,
             htmlContent: emailHtml,

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 
-// Helper to chunk array into smaller arrays
 function chunkArray<T>(array: T[], size: number): T[][] {
   const chunks: T[][] = []
   for (let i = 0; i < array.length; i += size) {
@@ -12,7 +11,6 @@ function chunkArray<T>(array: T[], size: number): T[][] {
 
 export async function POST(req: Request) {
   try {
-    // 1. Check if user is admin
     const supabase = await createServerSupabaseClient()
     const { data: { session } } = await supabase.auth.getSession()
 
@@ -30,7 +28,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // 2. Get request body
     const body = await req.json()
     const { subject, htmlContent } = body
 
@@ -38,7 +35,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Subject and content are required' }, { status: 400 })
     }
 
-    // 3. Fetch all newsletter subscribers
     const { data: subscribers, error: fetchError } = await supabase
       .from('newsletter_subscribers')
       .select('email')
@@ -53,14 +49,12 @@ export async function POST(req: Request) {
     }
 
     const emails = subscribers.map((s) => s.email)
-
-    // 4. Prepare Brevo API
     const brevoKey = process.env.BREVO_API_KEY
     if (!brevoKey) {
       return NextResponse.json({ error: 'BREVO_API_KEY is not set' }, { status: 500 })
     }
 
-    // 5. Build the email HTML with image scaling and responsive container
+    // ✅ Build the email HTML with strong left-alignment and responsive images
     const emailHtml = `
 <!DOCTYPE html>
 <html>
@@ -69,12 +63,19 @@ export async function POST(req: Request) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff; text-align: left;  }
+    .container { 
+      max-width: 600px; 
+      margin: 0 auto; 
+      padding: 20px; 
+      background-color: #ffffff; 
+      text-align: left !important; 
+    }
     img { max-width: 100%; height: auto; display: block; }
-    p { margin: 0 0 10px 0; line-height: 1.6; }
-    h1, h2, h3 { margin: 0 0 10px 0; }
-    .ql-align-center { text-align: center; } /* ✅ Allows Quill's center alignment to still work */
-    .ql-align-right { text-align: right; }
+    p { margin: 0 0 10px 0; line-height: 1.6; text-align: left !important; }
+    h1, h2, h3 { margin: 0 0 10px 0; text-align: left !important; }
+    div, span, a { text-align: left !important; }
+    .ql-align-center { text-align: center !important; }
+    .ql-align-right { text-align: right !important; }
   </style>
 </head>
 <body>
@@ -85,13 +86,11 @@ export async function POST(req: Request) {
 </html>
     `
 
-    // 6. Chunk emails (Brevo allows 50 recipients per call)
     const chunks = chunkArray(emails, 50)
     let successCount = 0
     let failedCount = 0
     const errors: string[] = []
 
-    // 7. Send to each chunk
     for (const chunk of chunks) {
       const to = chunk.map((email) => ({ email }))
 
@@ -103,8 +102,8 @@ export async function POST(req: Request) {
             'api-key': brevoKey,
           },
           body: JSON.stringify({
-            // ✅ Update this sender email to his verified Brevo sender
-            sender: { email: 'lasvegassc702@yahoo.com', name: 'Reaper Crew' },
+            // ✅ Use his verified sender email
+            sender: { email: 'your-verified-sender@example.com', name: 'Reaper Crew' },
             to: to,
             subject: subject,
             htmlContent: emailHtml,

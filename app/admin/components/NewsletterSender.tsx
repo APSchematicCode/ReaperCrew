@@ -19,10 +19,19 @@ export default function NewsletterSender() {
   const { addToast } = useToast()
   const quillRef = useRef<ReactQuill>(null)
 
-  // Helper to get the Quill editor instance
+  // ✅ Enable spell check on the editor after mount
+  useEffect(() => {
+    const quill = quillRef.current?.getEditor()
+    if (quill) {
+      const editorRoot = quill.root as HTMLElement
+      if (editorRoot) {
+        editorRoot.setAttribute('spellcheck', 'true')
+      }
+    }
+  }, [])
+
   const getEditor = () => quillRef.current?.getEditor()
 
-  // Custom image handler that uses the ref
   const handleImageUpload = async (file: File) => {
     const quill = getEditor()
     if (!quill) {
@@ -45,7 +54,6 @@ export default function NewsletterSender() {
     }
   }
 
-  // Build the modules with a function that captures the ref
   const modules = {
     toolbar: {
       container: [
@@ -146,7 +154,6 @@ export default function NewsletterSender() {
       </div>
 
       <div className="space-y-4">
-        {/* Subject */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">Subject</label>
           <input
@@ -159,7 +166,6 @@ export default function NewsletterSender() {
           />
         </div>
 
-        {/* Rich Text Editor – images are constrained inside the editor */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">Message</label>
           <ReactQuill
@@ -176,7 +182,6 @@ export default function NewsletterSender() {
           </p>
         </div>
 
-        {/* Status */}
         {status.type !== 'idle' && (
           <div
             className={`px-4 py-2 rounded text-sm ${
@@ -191,7 +196,6 @@ export default function NewsletterSender() {
           </div>
         )}
 
-        {/* Send Button */}
         <button
           onClick={handleSend}
           disabled={loading || subscriberCount === 0}

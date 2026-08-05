@@ -1,22 +1,24 @@
-import { supabase } from '@/lib/supabase'
-
 export async function uploadImageToSupabase(file: File, folder: 'newsletter' | 'blog' | 'general' = 'general'): Promise<string | null> {
-  const fileExt = file.name.split('.').pop()
-  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`
-  const filePath = `${folder}/${fileName}`
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('folder', folder)
 
-  const { error: uploadError } = await supabase.storage
-    .from('newsletter') // You can change this bucket name
-    .upload(filePath, file)
+  try {
+    const response = await fetch('/api/upload-image', {
+      method: 'POST',
+      body: formData,
+    })
 
-  if (uploadError) {
-    console.error('Image upload failed:', uploadError)
+    const data = await response.json()
+
+    if (!response.ok) {
+      console.error('Upload API error:', data.error)
+      return null
+    }
+
+    return data.url
+  } catch (error) {
+    console.error('Upload failed:', error)
     return null
   }
-
-  const { data: { publicUrl } } = supabase.storage
-    .from('newsletter')
-    .getPublicUrl(filePath)
-
-  return publicUrl
 }

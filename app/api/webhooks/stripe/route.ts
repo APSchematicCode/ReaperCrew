@@ -20,6 +20,64 @@ function getSupabaseAdmin() {
   return createClient(url, key)
 }
 
+
+
+async function sendOrderConfirmationEmail(customerEmail: string, customerName: string, orderId: string, items: any[], totalCents: number) {
+  const brevoKey = process.env.BREVO_API_KEY
+  if (!brevoKey) {
+    console.error('BREVO_API_KEY is not set – skipping email')
+    return
+  }
+
+  const itemsHtml = items.map((item) => `
+    <tr>
+      <td>${item.name} (${item.variant})</td>
+      <td>× ${item.quantity}</td>
+      <td>$${(item.price / 100).toFixed(2)}</td>
+    </tr>
+  `).join('')
+
+  const totalDollars = (totalCents / 100).toFixed(2)
+
+  const htmlContent = `
+    <h1>Thank you for your order, ${customerName}!</h1>
+    <p>Your order <strong>#${orderId.slice(0, 8)}</strong> has been confirmed.</p>
+    <h3>Order Summary</h3>
+    <table border="1" cellpadding="5">
+      <tr><th>Item</th><th>Qty</th><th>Price</th></tr>
+      ${itemsHtml}
+      <tr><td colspan="2"><strong>Total</strong></td><td><strong>$${totalDollars}</strong></td></tr>
+    </table>
+    <p>We'll notify you when your order ships.</p>
+    <p>– Reaper Crew</p>
+  `
+
+  try {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': brevoKey,
+      },
+      body: JSON.stringify({
+        sender: { email: 'noreply@reapercrew.com', name: 'Reaper Crew' },
+        to: [{ email: customerEmail, name: customerName }],
+        subject: `Order Confirmation #${orderId.slice(0, 8)}`,
+        htmlContent,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Brevo email failed:', errorText)
+    } else {
+      console.log(`✅ Confirmation email sent to ${customerEmail}`)
+    }
+  } catch (err: any) {
+    console.error('Brevo error:', err.message)
+  }
+}
+
 export async function POST(req: Request) {
   const rawBody = await req.text()
   const signature = req.headers.get('stripe-signature')!
@@ -109,6 +167,17 @@ export async function POST(req: Request) {
         }
 
         console.log(`✅ Order ${order.id} created and marked as paid.`)
+
+
+        await sendOrderConfirmationEmail(
+          orderData.customer_email,
+          orderData.customer_name || 'Customer',
+          order.id,
+          fullItems,
+          totalCents
+        )
+
+        
       } catch (err: any) {
         console.error('Error processing webhook:', err.message)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

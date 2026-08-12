@@ -18,39 +18,47 @@ interface OrdersListProps {
   orders: Order[]
 }
 
+const ITEMS_PER_PAGE = 15
+
 export default function OrdersList({ orders }: OrdersListProps) {
   const [items, setItems] = useState(orders)
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const { addToast } = useToast()
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  const currentOrders = items.slice(startIndex, endIndex)
+
   const updateStatus = async (id: string, newStatus: Order['status']) => {
-  setLoadingId(id)
+    setLoadingId(id)
 
-  try {
-    const response = await fetch('/api/orders/update-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId: id, newStatus }),
-    })
+    try {
+      const response = await fetch('/api/orders/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: id, newStatus }),
+      })
 
-    const data = await response.json()
+      const data = await response.json()
 
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to update status')
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update status')
+      }
+
+      setItems(items.map(order =>
+        order.id === id ? { ...order, status: newStatus } : order
+      ))
+      addToast(`Order status updated to ${newStatus}.`, 'success')
+    } catch (error: any) {
+      addToast(`Failed to update status: ${error.message}`, 'error')
+    } finally {
+      setLoadingId(null)
     }
-
-    // Update local state
-    setItems(items.map(order =>
-      order.id === id ? { ...order, status: newStatus } : order
-    ))
-    addToast(`Order status updated to ${newStatus}.`, 'success')
-  } catch (error: any) {
-    addToast(`Failed to update status: ${error.message}`, 'error')
-  } finally {
-    setLoadingId(null)
   }
-}
 
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
@@ -59,6 +67,12 @@ export default function OrdersList({ orders }: OrdersListProps) {
       case 'shipped': return 'bg-purple-900 text-purple-300'
       case 'completed': return 'bg-green-900 text-green-300'
       case 'cancelled': return 'bg-red-900 text-red-300'
+    }
+  }
+
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page)
     }
   }
 
@@ -82,7 +96,7 @@ export default function OrdersList({ orders }: OrdersListProps) {
             </tr>
           </thead>
           <tbody>
-            {items.map((order) => (
+            {currentOrders.map((order) => (
               <tr key={order.id} className="border-b border-gray-800 hover:bg-gray-800/50 transition">
                 <td className="px-4 py-3 text-white text-sm font-mono">#{order.id.slice(0, 8)}</td>
                 <td className="px-4 py-3">
@@ -126,7 +140,7 @@ export default function OrdersList({ orders }: OrdersListProps) {
 
       {/* Mobile Cards */}
       <div className="md:hidden divide-y divide-gray-800">
-        {items.map((order) => (
+        {currentOrders.map((order) => (
           <div key={order.id} className="p-4 space-y-2">
             <div className="flex justify-between">
               <span className="text-white font-mono text-sm">#{order.id.slice(0, 8)}</span>
@@ -160,6 +174,29 @@ export default function OrdersList({ orders }: OrdersListProps) {
           </div>
         ))}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-3 mt-6 py-3 border-t border-gray-700">
+          <button
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed text-sm px-3 py-1 bg-gray-800 rounded hover:bg-gray-700 transition"
+          >
+            Previous
+          </button>
+          <span className="text-gray-300 text-sm">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed text-sm px-3 py-1 bg-gray-800 rounded hover:bg-gray-700 transition"
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       {/* View Order Modal */}
       {selectedOrder && (

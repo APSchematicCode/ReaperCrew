@@ -112,7 +112,7 @@ export async function POST(req: Request) {
           },
           body: JSON.stringify({
             // ✅ Update this sender email to his verified Brevo sender
-            sender: { email: 'your-verified-sender@example.com', name: 'Reaper Crew' },
+            sender: { email: 'lasvegassc702@yahoo.com', name: 'Reaper Crew' },
             to: to,
             subject: subject,
             htmlContent: emailHtml,

@@ -148,7 +148,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
 
                 {(isGloballyOutOfStock || allVariantsOOS) ? (
                   <div className="mt-3">
-                    <WaitlistButton productId={product.id} productName={product.name} variant={selectedVariant || 'Default'} />
+                    <WaitlistButton productId={product.id} variant={selectedVariant || 'Default'} />
                   </div>
                 ) : isSelectedVariantOOS ? (
                   <>
@@ -158,7 +158,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                       </span>
                     </div>
                     <div className="mt-2">
-                      <WaitlistButton productId={product.id} productName={product.name} variant={selectedVariant || 'Default'} />
+                      <WaitlistButton productId={product.id} variant={selectedVariant || 'Default'} />
                     </div>
                   </>
                 ) : (

@@ -23,6 +23,7 @@ function SuccessContent() {
       <h1 className="text-3xl font-unifraktur text-white mb-2">Order Placed!</h1>
       <p className="text-gray-400 mb-2">Thank you for your order. You will receive a confirmation email shortly.</p>
       <p className="text-gray-500 text-sm mb-6">Order ID: {sessionId?.slice(0, 8)}</p>
+      <p className="text-gray-400 text-xs mt-2"> You checked out as a guest. If you create an account with this email, you'll be able to track your order.</p>
       {/* ✅ Use a standard <a> tag to avoid Next.js routing issues after cart clear */}
       <a href="/shop" className="bg-white text-black px-6 py-3 rounded font-medium hover:bg-gray-200 transition inline-block">
         Continue Shopping

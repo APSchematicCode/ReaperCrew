@@ -237,7 +237,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
             )}
 
             {(isGloballyOutOfStock || allVariantsOOS) ? (
-              <WaitlistButton productId={product.id} productName={product.name} variant={selectedVariant || 'Default'} />
+              <WaitlistButton productId={product.id} variant={selectedVariant || 'Default'} />
             ) : isSelectedVariantOOS ? (
               <>
                 <div className="mb-3">
@@ -245,7 +245,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
                     Out of Stock
                   </span>
                 </div>
-                <WaitlistButton productId={product.id} productName={product.name} variant={selectedVariant || 'Default'} />
+                <WaitlistButton productId={product.id} variant={selectedVariant || 'Default'} />
               </>
             ) : (
               <>

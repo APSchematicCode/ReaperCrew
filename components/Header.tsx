@@ -13,7 +13,11 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Desktop Layout: Logo left, Nav right */}
         <div className="hidden md:flex items-center justify-between h-16">
-          <Link href="/" className="text-3xl font-unifraktur tracking-wider text-white hover:text-gray-300 transition whitespace-nowrap">
+          <Link
+            href="/"
+            style={{ fontFamily: 'var(--font-unifraktur), cursive' }}
+            className="text-3xl tracking-wider text-white hover:text-gray-300 transition whitespace-nowrap"
+          >
             Reaper Crew
           </Link>
 
@@ -53,15 +57,16 @@ export default function Header() {
 
         {/* Mobile Layout: Logo Centered, Hamburger on Right */}
         <div className="flex md:hidden items-center justify-between h-16">
-          {/* Spacer to balance the centered logo */}
           <div className="w-8"></div>
 
-          {/* Centered Logo – stays on one line */}
-          <Link href="/" className="text-2xl sm:text-3xl font-unifraktur tracking-wider text-white hover:text-gray-300 transition whitespace-nowrap text-center">
+          <Link
+            href="/"
+            style={{ fontFamily: 'var(--font-unifraktur), cursive' }}
+            className="text-2xl sm:text-3xl tracking-wider text-white hover:text-gray-300 transition whitespace-nowrap text-center"
+          >
             Reaper Crew
           </Link>
 
-          {/* Hamburger with Cart Badge */}
           <div className="flex items-center gap-2 relative">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -84,7 +89,7 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile Drawer (same as before) */}
+        {/* Mobile Drawer */}
         <div
           className={`fixed top-16 right-0 w-64 h-[calc(100vh-4rem)] bg-black/50 backdrop-blur-sm border-l border-gray-700 transform transition-transform duration-300 ease-in-out md:hidden overflow-y-auto flex flex-col ${
             isMenuOpen ? 'translate-x-0' : 'translate-x-full'

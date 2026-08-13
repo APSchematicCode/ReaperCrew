@@ -113,7 +113,7 @@ export default function Header() {
               <Link href="/contact" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Contact</Link>
               <Link href="/account" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Account</Link>
               <Link href="/wishlist" className="block text-xl text-gray-300 hover:text-white transition" onClick={() => setIsMenuOpen(false)}>Wishlist</Link>
-              <Link href="/cart" className="block text-xl text-gray-300 hover:text-white transition flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+              <Link href="/cart" className="block text-xl text-gray-300 hover:text-white transition items-center gap-2" onClick={() => setIsMenuOpen(false)}>
                 Cart
                 {totalItems > 0 && (
                   <span className="bg-white text-black text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">

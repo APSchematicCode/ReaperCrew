@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
-import { sendOrderStatusEmail } from '@/lib/email' // ✅ Import shared function
+
+// ─── Helpers ──────────────────────────────────────────────
 
 function getStripe() {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -20,6 +21,129 @@ function getSupabaseAdmin() {
   }
   return createClient(url, key)
 }
+
+// ─── Brevo Email Function ────────────────────────────────
+
+async function sendOrderStatusEmail(
+  customerEmail: string,
+  customerName: string,
+  orderId: string,
+  status: string,
+  items: any[],
+  totalCents: number
+) {
+  const brevoKey = process.env.BREVO_API_KEY
+  if (!brevoKey) {
+    console.warn('⚠️ BREVO_API_KEY is not set – skipping email')
+    return
+  }
+
+  const itemsHtml = items
+    .map(
+      (item) => `
+    <tr>
+      <td>${item.name} (${item.variant})</td>
+      <td>× ${item.quantity}</td>
+      <td>$${(item.price / 100).toFixed(2)}</td>
+    </tr>
+  `
+    )
+    .join('')
+
+  const totalDollars = (totalCents / 100).toFixed(2)
+  const statusEmoji = status === 'completed' ? '✅' : status === 'shipped' ? '📦' : status === 'cancelled' ? '❌' : '📝'
+  const statusMessage =
+    status === 'pending'
+      ? 'Your order has been received and is pending review.'
+      : status === 'paid'
+      ? 'Your payment has been confirmed. We are preparing your order.'
+      : status === 'shipped'
+      ? 'Your order has been shipped!'
+      : status === 'completed'
+      ? 'Your order has been delivered. Enjoy!'
+      : status === 'cancelled'
+      ? 'Your order has been cancelled.'
+      : 'Your order status has been updated.'
+
+  const htmlContent = `
+    <h1>Order Status Update, ${customerName}!</h1>
+    <p>${statusEmoji} Your order <strong>#${orderId.slice(0, 8)}</strong> is now <strong>${status.toUpperCase()}</strong>.</p>
+    <p>${statusMessage}</p>
+    <h3>Order Summary</h3>
+    <table border="1" cellpadding="5">
+      <tr><th>Item</th><th>Qty</th><th>Price</th></tr>
+      ${itemsHtml}
+      <tr><td colspan="2"><strong>Total</strong></td><td><strong>$${totalDollars}</strong></td></tr>
+    </table>
+    <p>– Reaper Crew</p>
+  `
+
+  try {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': brevoKey,
+      },
+      body: JSON.stringify({
+        sender: { email: 'angelpersonal3@gmail.com', name: 'Reaper Crew' },
+        to: [{ email: customerEmail, name: customerName }],
+        subject: `Order #${orderId.slice(0, 8)} Status: ${status.toUpperCase()}`,
+        htmlContent,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('❌ Brevo email failed:', errorText)
+    } else {
+      console.log(`✅ Status email sent to ${customerEmail} (Status: ${status})`)
+    }
+  } catch (err: any) {
+    console.error('❌ Brevo error:', err.message)
+  }
+}
+
+// ─── Inventory Decrement Helper ──────────────────────────
+
+async function updateInventory(items: any[], supabase: any) {
+  for (const item of items) {
+    const { data: product, error: fetchError } = await supabase
+      .from('products')
+      .select('name, variants_json')
+      .eq('id', item.id)
+      .single()
+
+    if (fetchError) {
+      console.error(`Failed to fetch product ${item.id}:`, fetchError)
+      continue
+    }
+
+    const variants = product.variants_json || {}
+    const variantKey = item.variant
+
+    if (variants[variantKey] !== undefined) {
+      const currentStock = variants[variantKey]
+      const newStock = Math.max(0, currentStock - item.quantity)
+      variants[variantKey] = newStock
+
+      const { error: updateError } = await supabase
+        .from('products')
+        .update({ variants_json: variants })
+        .eq('id', item.id)
+
+      if (updateError) {
+        console.error(`Failed to update inventory for product ${item.id}:`, updateError)
+      } else {
+        console.log(`✅ Stock updated for ${product.name} (${variantKey}): ${currentStock} → ${newStock}`)
+      }
+    } else {
+      console.warn(`Variant ${variantKey} not found for product ${item.id}`)
+    }
+  }
+}
+
+// ─── Webhook Handler ──────────────────────────────────────
 
 export async function POST(req: Request) {
   const rawBody = await req.text()
@@ -108,15 +232,18 @@ export async function POST(req: Request) {
 
         console.log(`✅ Order ${order.id} created and marked as paid.`)
 
-        // ✅ Send email using the shared function
+        // ✅ Send email confirmation
         await sendOrderStatusEmail(
           orderData.customer_email,
           orderData.customer_name || 'Customer',
           order.id,
-          'paid', // Status is always 'paid' here
+          'paid',
           fullItems,
           totalCents
         )
+
+        // ✅ Update inventory
+        await updateInventory(fullItems, supabase)
 
       } catch (err: any) {
         console.error('Error processing webhook:', err.message)

@@ -15,6 +15,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '2mb',
     },
   },
+  serverExternalPackages: ['react-quill-new'],
 }
 
 export default nextConfig

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/context/ToastContext'
 
@@ -23,6 +23,11 @@ export default function WaitlistList({ entries }: WaitlistListProps) {
   const [notifying, setNotifying] = useState<string | null>(null)
   const { addToast } = useToast()
 
+  // ✅ Refresh items when entries prop changes (or we can fetch fresh)
+  useEffect(() => {
+    setItems(entries)
+  }, [entries])
+
   const handleDelete = async (id: string) => {
     if (!confirm('Remove this email from the waitlist?')) return
     setLoadingId(id)
@@ -36,12 +41,10 @@ export default function WaitlistList({ entries }: WaitlistListProps) {
     setLoadingId(null)
   }
 
-  // ✅ "Notify All" for a specific variant
   const handleNotifyAll = async (productId: string, variant: string) => {
     const key = `${productId}-${variant}`
     setNotifying(key)
 
-    // Get all emails for this product + variant
     const targetEntries = items.filter(e => e.product_id === productId && e.variant === variant)
     if (targetEntries.length === 0) {
       addToast('No entries for this variant.', 'error')
@@ -51,12 +54,6 @@ export default function WaitlistList({ entries }: WaitlistListProps) {
 
     const emails = targetEntries.map(e => e.user_email)
 
-    // 1. Send email via Brevo
-    const brevoKey = process.env.BREVO_API_KEY // This needs to be available in the client? No, we need an API route.
-    // Actually, we need to call an API route to send this, or we can just send a notification.
-    // I'll use a fetch to a new API route or just send a simple email.
-    // For simplicity, I'll log it and send a toast. We'll build a quick API route for this.
-    // Let's do a quick fetch to /api/admin/waitlist-notify
     try {
       const response = await fetch('/api/admin/waitlist-notify', {
         method: 'POST',
@@ -65,6 +62,10 @@ export default function WaitlistList({ entries }: WaitlistListProps) {
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error)
+      
+      // ✅ Remove entries that were just notified
+      const targetIds = targetEntries.map(e => e.id)
+      setItems(items.filter(e => !targetIds.includes(e.id)))
       addToast(`Notified ${data.sent} users.`, 'success')
     } catch (error: any) {
       addToast(`Failed: ${error.message}`, 'error')
@@ -73,7 +74,7 @@ export default function WaitlistList({ entries }: WaitlistListProps) {
     }
   }
 
-  // Group entries by product + variant for the "Notify All" buttons
+  // Group entries
   const groupedEntries = items.reduce((acc, entry) => {
     const key = `${entry.product_id}-${entry.variant}`
     if (!acc[key]) acc[key] = []
@@ -87,7 +88,6 @@ export default function WaitlistList({ entries }: WaitlistListProps) {
 
   return (
     <>
-      {/* Notify All Buttons for each variant */}
       <div className="flex flex-wrap gap-2 p-4 bg-gray-800 border-b border-gray-700">
         {Object.entries(groupedEntries).map(([key, entries]) => {
           const [productId, variant] = key.split('-')
@@ -104,8 +104,6 @@ export default function WaitlistList({ entries }: WaitlistListProps) {
           )
         })}
       </div>
-
-      {/* Table (unchanged) */}
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead className="bg-gray-800 border-b border-gray-700">

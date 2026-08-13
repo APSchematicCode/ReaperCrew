@@ -1,119 +1,104 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/context/ToastContext'
 
-interface WaitlistButtonProps {
+interface WishlistButtonProps {
   productId: string
-  productName: string
   variant: string
+  className?: string
 }
 
-export default function WaitlistButton({ productId, productName, variant }: WaitlistButtonProps) {
-  const [email, setEmail] = useState('')
-  const [isOpen, setIsOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [error, setError] = useState('')
+export default function WishlistButton({ productId, variant, className = '' }: WishlistButtonProps) {
+  const [isInWishlist, setIsInWishlist] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const { addToast } = useToast()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+  useEffect(() => {
+    checkWishlist()
+  }, [productId, variant])
 
-    const { error: insertError } = await supabase
-      .from('waitlist')
-      .insert({
-        product_id: productId,
-        user_email: email,
-        variant: variant,
-      })
-
-    if (insertError) {
-      if (insertError.code === '23505') {
-        setError('You are already on the waitlist for this variant.')
-      } else {
-        setError('Failed to join waitlist. Please try again.')
-      }
+  const checkWishlist = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       setLoading(false)
       return
     }
 
+    const { data } = await supabase
+      .from('waitlist')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('product_id', productId)
+      .eq('variant', variant) // ✅ Check variant
+      .maybeSingle()
+
+    setIsInWishlist(!!data)
     setLoading(false)
-    setSuccess(true)
-    setEmail('')
-    setTimeout(() => {
-      setIsOpen(false)
-      setSuccess(false)
-    }, 3000)
   }
 
+  const toggleWishlist = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      addToast('Please log in to save favorites.', 'error')
+      return
+    }
+
+    if (isInWishlist) {
+      const { error } = await supabase
+        .from('waitlist')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('product_id', productId)
+        .eq('variant', variant) // ✅ Check variant
+
+      if (error) {
+        addToast('Failed to remove from waitlist.', 'error')
+      } else {
+        setIsInWishlist(false)
+        addToast('Removed from waitlist.', 'success')
+      }
+    } else {
+      const { error } = await supabase
+        .from('waitlist')
+        .insert({ user_id: user.id, product_id: productId, variant })
+
+      if (error) {
+        if (error.code === '23505') {
+          addToast('You are already on the waitlist for this size.', 'error')
+        } else {
+          addToast('Failed to add to waitlist.', 'error')
+        }
+      } else {
+        setIsInWishlist(true)
+        addToast('Added to waitlist!', 'success')
+      }
+    }
+  }
+
+  if (loading) return null
+
   return (
-    <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="w-full mt-2 text-sm text-gray-400 hover:text-white transition border border-gray-700 py-1.5 rounded hover:border-gray-500"
+    <button
+      onClick={toggleWishlist}
+      className={`transition ${className}`}
+      aria-label="Toggle wishlist"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-6 h-6"
+        fill={isInWishlist ? 'currentColor' : 'none'}
+        viewBox="0 0 24 24"
+        stroke="currentColor"
       >
-        Notify me when back in stock
-      </button>
-
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-          onClick={() => setIsOpen(false)}
-        >
-          <div
-            className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-md p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-xl font-unifraktur text-white mb-2">Get Notified</h3>
-            <p className="text-gray-400 text-sm mb-4">
-              Enter your email and we'll let you know when <span className="text-white">{productName}</span> ({variant}) is back in stock.
-            </p>
-
-            {success ? (
-              <div className="bg-green-900/50 border border-green-700 text-green-200 px-4 py-3 rounded">
-                ✅ You're on the list! We'll notify you when it's back.
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {error && (
-                  <div className="bg-red-900/50 border border-red-800 text-red-200 px-4 py-2 rounded text-sm">
-                    {error}
-                  </div>
-                )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Email *</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
-                    placeholder="you@example.com"
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsOpen(false)}
-                    className="flex-1 bg-gray-800 text-gray-300 py-2 rounded hover:bg-gray-700 transition"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 bg-white text-black py-2 rounded font-medium hover:bg-gray-200 transition disabled:opacity-50"
-                  >
-                    {loading ? 'Submitting...' : 'Notify Me'}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
-    </>
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+        />
+      </svg>
+    </button>
   )
 }

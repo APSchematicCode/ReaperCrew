@@ -104,22 +104,22 @@ export default async function AdminDashboard() {
   return (
     <main className="min-h-screen bg-black">
       <div className="max-w-7xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-unifraktur text-white mb-2">Admin Dashboard</h1>
+        <h1 className="text-3xl old-english text-white mb-2">Admin Dashboard</h1>
         <p className="text-gray-400 mb-8">Manage your store.</p>
 
         {/* ===== ANALYTICS ===== */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4">Analytics</h2>
+        <h2 className="text-2xl old-english text-white mb-4">Analytics</h2>
         <AnalyticsCards data={analyticsData} />
 
         {/* ===== SETTINGS ===== */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4">Settings</h2>
+        <h2 className="text-2xl old-english text-white mb-4">Settings</h2>
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-12">
           <p className="text-gray-400 text-sm mb-4">Configure store settings.</p>
           <ShippingSettings />
         </div>
 
         {/* ===== PRODUCTS ===== */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4">Products</h2>
+        <h2 className="text-2xl old-english text-white mb-4">Products</h2>
         <div className="mb-4">
           <AddProductButtonWrapper />
         </div>
@@ -130,7 +130,7 @@ export default async function AdminDashboard() {
         </div>
 
         {/* ===== SLIDESHOW ===== */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4">Slideshow</h2>
+        <h2 className="text-2xl old-english text-white mb-4">Slideshow</h2>
         <div className="mb-4">
           <AddSlideButton />
         </div>
@@ -139,40 +139,40 @@ export default async function AdminDashboard() {
         </div>
 
         {/* ===== ORDERS ===== */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4">Orders</h2>
+        <h2 className="text-2xl old-english text-white mb-4">Orders</h2>
         <p className="text-gray-400 text-sm mb-4">Manage customer orders.</p>
         <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden mb-12">
           <OrdersList orders={orders || []} />
         </div>
 
         {/* ===== WAITLIST ===== */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4">Waitlist</h2>
+        <h2 className="text-2xl old-english text-white mb-4">Waitlist</h2>
         <p className="text-gray-400 text-sm mb-4">Customers who want restock notifications.</p>
         <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden mb-12">
           <WaitlistList entries={waitlist || []} />
         </div>
 
         {/* ===== INBOX ===== */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4">Inbox</h2>
+        <h2 className="text-2xl old-english text-white mb-4">Inbox</h2>
         <p className="text-gray-400 text-sm mb-4">Customer messages.</p>
         <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden mb-12">
           <InboxList inquiries={inquiries || []} />
         </div>
 
         {/* ===== REVIEWS ===== */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4">Reviews</h2>
+        <h2 className="text-2xl old-english text-white mb-4">Reviews</h2>
         <p className="text-gray-400 text-sm mb-4">Approve or delete reviews.</p>
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-12">
           <ReviewsList />
         </div>
 
         {/* NEWSLETTER */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4 mt-12">Newsletter</h2>
+        <h2 className="text-2xl old-english text-white mb-4 mt-12">Newsletter</h2>
         <p className="text-gray-400 text-sm mb-4">Send a mass email to all subscribers.</p>
         <NewsletterSender />
 
         {/* ===== COUPONS ===== */}
-        <h2 className="text-2xl font-unifraktur text-white mb-4">Discount Codes</h2>
+        <h2 className="text-2xl old-english text-white mb-4">Discount Codes</h2>
         <p className="text-gray-400 text-sm mb-4">Manage promotions.</p>
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
           <CouponManager />

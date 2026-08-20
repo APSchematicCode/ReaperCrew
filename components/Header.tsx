@@ -11,12 +11,12 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 bg-black/90 backdrop-blur-sm border-b border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Desktop Layout: Logo left, Nav right */}
+        {/* Desktop Layout */}
         <div className="hidden md:flex items-center justify-between h-16">
           <Link
             href="/"
-            style={{ fontFamily: 'var(--font-unifraktur), cursive' }}
-            className="text-3xl tracking-wider text-white hover:text-gray-300 transition whitespace-nowrap"
+            style={{ fontFamily: 'OldEnglish, cursive' }}
+            className="text-4xl tracking-wider text-white hover:text-gray-300 transition whitespace-nowrap"
           >
             Reaper Crew
           </Link>
@@ -55,14 +55,14 @@ export default function Header() {
           </nav>
         </div>
 
-        {/* Mobile Layout: Logo Centered, Hamburger on Right */}
+        {/* Mobile Layout */}
         <div className="flex md:hidden items-center justify-between h-16">
           <div className="w-8"></div>
 
           <Link
             href="/"
-            style={{ fontFamily: 'var(--font-unifraktur), cursive' }}
-            className="text-2xl sm:text-3xl tracking-wider text-white hover:text-gray-300 transition whitespace-nowrap text-center"
+            style={{ fontFamily: 'OldEnglish, cursive' }}
+            className="text-3xl sm:text-4xl tracking-wider text-white hover:text-gray-300 transition whitespace-nowrap text-center"
           >
             Reaper Crew
           </Link>
@@ -89,7 +89,7 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile Drawer */}
+        {/* Mobile Drawer (unchanged) */}
         <div
           className={`fixed top-16 right-0 w-64 h-[calc(100vh-4rem)] bg-black/50 backdrop-blur-sm border-l border-gray-700 transform transition-transform duration-300 ease-in-out md:hidden overflow-y-auto flex flex-col ${
             isMenuOpen ? 'translate-x-0' : 'translate-x-full'

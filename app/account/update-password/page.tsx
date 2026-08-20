@@ -57,7 +57,7 @@ export default function UpdatePasswordPage() {
       <Header />
       <div className="flex-1 flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-lg p-8">
-          <h1 className="text-2xl font-unifraktur text-white text-center mb-6">Update Password</h1>
+          <h1 className="text-2xl old-english text-white text-center mb-6">Update Password</h1>
           {success ? (
             <div className="text-green-400 text-center">
               ✅ Password updated successfully! Redirecting...

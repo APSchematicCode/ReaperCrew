@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        unifraktur: ['var(--font-unifraktur)', 'cursive'],
+        oldenglish: ['OldEnglish', 'cursive'],
       },
     },
   },

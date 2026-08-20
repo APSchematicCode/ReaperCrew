@@ -150,7 +150,7 @@ export default function InboxList({ inquiries }: InboxListProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-unifraktur text-white">Message</h3>
+              <h3 className="text-xl old-english text-white">Message</h3>
               <button
                 onClick={() => setSelectedMessage(null)}
                 className="text-gray-400 hover:text-white transition"

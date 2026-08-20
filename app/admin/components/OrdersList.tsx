@@ -197,7 +197,7 @@ export default function OrdersList({ orders }: OrdersListProps) {
           <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-2xl p-6 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             {/* ... same modal content as before ... */}
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-unifraktur text-white">Order #{selectedOrder.id.slice(0, 8)}</h3>
+              <h3 className="text-xl old-english text-white">Order #{selectedOrder.id.slice(0, 8)}</h3>
               <button onClick={() => setSelectedOrder(null)} className="text-gray-400 hover:text-white transition"><svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
             <div className="space-y-4">

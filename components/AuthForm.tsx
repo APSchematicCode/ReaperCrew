@@ -38,7 +38,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
   return (
     <div className="w-full max-w-md mx-auto bg-gray-900 border border-gray-800 rounded-lg p-8">
-      <h2 className="text-2xl font-unifraktur text-white text-center mb-6">
+      <h2 className="text-2xl old-english text-white text-center mb-6">
         {mode === 'login' ? 'Sign In' : 'Create Account'}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">

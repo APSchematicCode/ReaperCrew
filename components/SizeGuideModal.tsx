@@ -24,7 +24,7 @@ export default function SizeGuideModal({ productSpecs = {} }: SizeGuideModalProp
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
       <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto">
         <div className="flex justify-between items-start mb-4">
-          <h3 className="text-xl font-unifraktur text-white">Size Guide</h3>
+          <h3 className="text-xl old-english text-white">Size Guide</h3>
           <button
             onClick={() => setIsOpen(false)}
             className="text-gray-400 hover:text-white transition"

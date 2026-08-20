@@ -63,7 +63,7 @@ export default function LoginPage() {
       <Header />
       <div className="flex-1 flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-lg p-8">
-          <h1 className="text-3xl font-unifraktur text-white text-center mb-6">Sign In</h1>
+          <h1 className="text-3xl old-english text-white text-center mb-6">Sign In</h1>
 
           <form onSubmit={handleLogin} className="space-y-4">
             {error && (
@@ -128,7 +128,7 @@ export default function LoginPage() {
             className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-md p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-2xl font-unifraktur text-white mb-4">Reset Password</h2>
+            <h2 className="text-2xl old-english text-white mb-4">Reset Password</h2>
             <p className="text-gray-400 text-sm mb-4">
               Enter your email address and we'll send you a link to reset your password.
             </p>

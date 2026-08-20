@@ -35,7 +35,7 @@ export default function AdminLogin() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-black px-4">
       <div className="w-full max-w-md bg-gray-900 rounded-lg border border-gray-800 p-8">
-        <h1 className="text-3xl font-unifraktur text-white text-center mb-2">Admin Login</h1>
+        <h1 className="text-3xl old-english text-white text-center mb-2">Admin Login</h1>
         <p className="text-gray-400 text-center text-sm mb-6">Sign in to manage your store.</p>
 
         {error && (

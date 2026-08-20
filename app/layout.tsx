@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 const unifrakturMaguntia = UnifrakturMaguntia({
   weight: '400',
   subsets: ['latin'],
-  variable: '--font-unifraktur',
+  variable: '--old-english',
   display: 'swap',
 });
 

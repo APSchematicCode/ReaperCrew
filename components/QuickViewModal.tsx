@@ -190,7 +190,7 @@ export default function QuickViewModal({ isOpen, onClose, product }: QuickViewMo
 
           {/* Details Section */}
           <div className="p-6 flex flex-col max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-unifraktur text-white mb-1">{product.name}</h2>
+            <h2 className="text-2xl old-english text-white mb-1">{product.name}</h2>
             <p className="text-3xl font-bold text-white mb-2">${(product.price / 100).toFixed(2)}</p>
 
             <div className="flex flex-wrap gap-2 mb-4">

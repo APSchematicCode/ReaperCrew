@@ -1,10 +1,14 @@
 /* 1. Self-hosted font (Bundler Agnostic) */
 @font-face {
-  font-family: 'UnifrakturMaguntia';
+  font-family: 'OldEnglish';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/unifrakturmaguntia.woff2') format('woff2');
+  src: url('/fonts/old-english-text.ttf') format('truetype'); 
+}
+
+h1, h2 {
+  font-family: 'OldEnglish', cursive;
 }
 
 /* 2. Tailwind imports */
@@ -30,6 +34,6 @@ body {
 }
 
 
-.font-old-english {
-  font-family: var(--font-unifraktur), cursive;
+.old-english {
+  font-family: 'OldEnglish', cursive;
 }

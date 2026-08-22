@@ -18,7 +18,7 @@ export default function Header() {
             style={{ fontFamily: 'OldEnglish, cursive' }}
             className="text-4xl tracking-wider text-white hover:text-gray-300 transition whitespace-nowrap"
           >
-            Reaper Crew
+            REAPER CREW
           </Link>
 
           <nav className="flex items-center space-x-6">

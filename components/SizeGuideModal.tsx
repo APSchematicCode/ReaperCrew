@@ -43,16 +43,16 @@ export default function SizeGuideModal({ productSpecs = {} }: SizeGuideModalProp
                 <tr>
                   <th className="px-3 py-2 text-gray-300">Size</th>
                   <th className="px-3 py-2 text-gray-300">Chest (in)</th>
-                  <th className="px-3 py-2 text-gray-300">Waist (in)</th>
-                  <th className="px-3 py-2 text-gray-300">Sleeve (in)</th>
+                  <th className="px-3 py-2 text-gray-300">Width (in)</th>
+                  <th className="px-3 py-2 text-gray-300">Length (in)</th>
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-gray-800"><td className="px-3 py-2 text-white">S</td><td className="px-3 py-2 text-gray-300">34-36</td><td className="px-3 py-2 text-gray-300">28-30</td><td className="px-3 py-2 text-gray-300">32</td></tr>
-                <tr className="border-b border-gray-800"><td className="px-3 py-2 text-white">M</td><td className="px-3 py-2 text-gray-300">38-40</td><td className="px-3 py-2 text-gray-300">32-34</td><td className="px-3 py-2 text-gray-300">33</td></tr>
-                <tr className="border-b border-gray-800"><td className="px-3 py-2 text-white">L</td><td className="px-3 py-2 text-gray-300">42-44</td><td className="px-3 py-2 text-gray-300">36-38</td><td className="px-3 py-2 text-gray-300">34</td></tr>
-                <tr className="border-b border-gray-800"><td className="px-3 py-2 text-white">XL</td><td className="px-3 py-2 text-gray-300">46-48</td><td className="px-3 py-2 text-gray-300">40-42</td><td className="px-3 py-2 text-gray-300">35</td></tr>
-                <tr><td className="px-3 py-2 text-white">XXL</td><td className="px-3 py-2 text-gray-300">50-52</td><td className="px-3 py-2 text-gray-300">44-46</td><td className="px-3 py-2 text-gray-300">36</td></tr>
+                <tr className="border-b border-gray-800"><td className="px-3 py-2 text-white">S</td><td className="px-3 py-2 text-gray-300">38</td><td className="px-3 py-2 text-gray-300">19</td><td className="px-3 py-2 text-gray-300">28</td></tr>
+                <tr className="border-b border-gray-800"><td className="px-3 py-2 text-white">M</td><td className="px-3 py-2 text-gray-300">40 1/2</td><td className="px-3 py-2 text-gray-300">20 1/4</td><td className="px-3 py-2 text-gray-300">29</td></tr>
+                <tr className="border-b border-gray-800"><td className="px-3 py-2 text-white">L</td><td className="px-3 py-2 text-gray-300">44 1/2</td><td className="px-3 py-2 text-gray-300">22 1/4</td><td className="px-3 py-2 text-gray-300">30</td></tr>
+                <tr className="border-b border-gray-800"><td className="px-3 py-2 text-white">XL</td><td className="px-3 py-2 text-gray-300">47 1/2</td><td className="px-3 py-2 text-gray-300">23 3/4</td><td className="px-3 py-2 text-gray-300">31</td></tr>
+                <tr><td className="px-3 py-2 text-white">XXL</td><td className="px-3 py-2 text-gray-300">50 1/2</td><td className="px-3 py-2 text-gray-300">25 1/4</td><td className="px-3 py-2 text-gray-300">32</td></tr>
               </tbody>
             </table>
           </div>

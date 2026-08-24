@@ -33,11 +33,13 @@ export default function ProductGrid({ products }: { products: Product[] }) {
     return <div className="text-gray-400">No products available</div>
   }
 
-  const handleAddToCart = (product: Product, variantKey: string, quantity: number) => {
+  const handleAddToCart = (product: Product, quantity: number) => {
+    const variantKeys = product.variants_json ? Object.keys(product.variants_json) : []
+    const defaultVariant = variantKeys[0] || 'Default'
     const mainImage = product.images_json?.[0] || ''
     let finalPrice = product.price
     const isService = product.product_type === 'service'
-    const variantExtra = product.variants_json?.[variantKey] || 0
+    const variantExtra = product.variants_json?.[defaultVariant] || 0
     if (isService && variantExtra > 0) {
       finalPrice = product.price + variantExtra
     }
@@ -46,7 +48,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
       name: product.name,
       price: finalPrice,
       image: mainImage,
-      variant: variantKey || 'Default',
+      variant: defaultVariant,
       quantity: quantity,
     })
     addToast(`${product.name} added to cart!`, 'success')
@@ -58,25 +60,26 @@ export default function ProductGrid({ products }: { products: Product[] }) {
         {products.map((product) => {
           const imageCount = product.images_json?.length || 0
           const mainImage = product.images_json?.[0] || ''
-          const variantKeys = product.variants_json ? Object.keys(product.variants_json) : []
-          const [selectedVariant, setSelectedVariant] = useState<string>(variantKeys[0] || '')
-          const [quantity, setQuantity] = useState<number>(1)
-          const isService = product.product_type === 'service'
           const isGloballyOutOfStock = product.out_of_stock === true
+          const variantKeys = product.variants_json ? Object.keys(product.variants_json) : []
           const allVariantsOOS = variantKeys.every(key => (product.variants_json?.[key] || 0) <= 0)
-          const selectedVariantStock = selectedVariant ? (product.variants_json?.[selectedVariant] || 0) : 0
-          const isSelectedVariantOOS = selectedVariantStock <= 0
+          const isService = product.product_type === 'service'
+          const isOOS = isGloballyOutOfStock || allVariantsOOS
 
           return (
-            <div key={product.id} className="bg-gray-900 rounded-lg overflow-hidden border border-gray-800 hover:border-gray-600 transition group flex flex-col">
-              <div className="relative h-64 w-full bg-gray-800 overflow-hidden">
+            <div
+              key={product.id}
+              className="group relative bg-transparent overflow-hidden transition duration-300"
+            >
+              {/* Image Container */}
+              <div className="relative aspect-square w-full bg-gray-900 overflow-hidden rounded-xl">
                 {mainImage ? (
-                  <div className="w-full h-full">
+                  <div className="w-full h-full transition-transform duration-500 group-hover:scale-105">
                     <Image
                       src={mainImage}
                       alt={product.name}
                       fill
-                      className="object-contain"
+                      className="object-cover"
                       sizes="(max-width: 768px) 100vw, 33vw"
                     />
                   </div>
@@ -89,13 +92,15 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                   </div>
                 )}
                 {imageCount > 1 && (
-                  <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm border border-gray-600">
+                  <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-1 rounded-full backdrop-blur-sm border border-gray-600">
                     +{imageCount - 1}
-                  </div>
+                  </span>
                 )}
+
+                {/* Quick View Overlay (Always visible on mobile, hover on desktop) */}
                 <button
                   onClick={() => setSelectedProduct(product)}
-                  className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                  className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"
                 >
                   <span className="bg-white/90 text-black px-4 py-2 rounded-lg font-medium text-sm hover:bg-white transition">
                     Quick View
@@ -103,93 +108,54 @@ export default function ProductGrid({ products }: { products: Product[] }) {
                 </button>
               </div>
 
-              <div className="p-4 flex flex-col flex-1">
-                <h3 className="text-xl font-semibold text-white">{product.name}</h3>
-                <p className="text-gray-400 text-sm mt-1 line-clamp-2 flex-1">{product.description}</p>
-
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="text-lg font-bold text-white">${(product.price / 100).toFixed(2)}</span>
-                  {isGloballyOutOfStock || allVariantsOOS ? (
-                    <span className="text-xs bg-red-900 text-red-300 px-2 py-1 rounded-full uppercase font-semibold">Out of Stock</span>
+              {/* Details */}
+              <div className="mt-3 space-y-1">
+                <h3 className="text-base font-medium text-white group-hover:text-gray-300 transition">
+                  {product.name}
+                </h3>
+                <div className="flex items-center justify-between">
+                  <p className="text-lg font-semibold text-white">
+                    ${(product.price / 100).toFixed(2)}
+                  </p>
+                  {isOOS ? (
+                    <span className="text-xs bg-red-900/70 text-red-300 px-2 py-0.5 rounded-full uppercase font-medium">
+                      OOS
+                    </span>
                   ) : product.is_pre_order ? (
-                    <span className="text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded-full uppercase font-semibold">Pre-Order</span>
+                    <span className="text-xs bg-yellow-900/70 text-yellow-300 px-2 py-0.5 rounded-full uppercase font-medium">
+                      Pre-Order
+                    </span>
                   ) : isService ? (
-                    <span className="text-xs bg-blue-900 text-blue-300 px-2 py-1 rounded-full uppercase font-semibold">Custom</span>
+                    <span className="text-xs bg-blue-900/70 text-blue-300 px-2 py-0.5 rounded-full uppercase font-medium">
+                      Custom
+                    </span>
                   ) : null}
                 </div>
-
-                {product.is_pre_order && product.estimated_ship_date && !isGloballyOutOfStock && !allVariantsOOS && (
-                  <p className="text-xs text-gray-400 mt-2">Will start shipping {product.estimated_ship_date}</p>
+                {product.is_pre_order && product.estimated_ship_date && !isOOS && (
+                  <p className="text-xs text-gray-400">Ships: {product.estimated_ship_date}</p>
                 )}
 
-                {variantKeys.length > 0 && (
-                  <div className="mt-3">
-                    <select
-                      value={selectedVariant}
-                      onChange={(e) => setSelectedVariant(e.target.value)}
-                      className={`w-full px-3 py-1.5 bg-black border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-gray-500 ${isGloballyOutOfStock ? 'opacity-50 pointer-events-none' : ''}`}
-                      disabled={isGloballyOutOfStock}
-                    >
-                      {variantKeys.map((key) => {
-                        const stock = product.variants_json[key] || 0
-                        const isOOS = stock <= 0
-                        return (
-                          <option key={key} value={key} className={isOOS ? 'text-red-400' : 'text-white'}>
-                            {key} {isService ? `(+$${(stock / 100).toFixed(2)})` : isOOS ? '(Out of Stock)' : `(${stock} in stock)`}
-                          </option>
-                        )
-                      })}
-                    </select>
-                    <p className="text-gray-500 text-xs mt-1">
-                      {isService ? 'Select a package option' : 'Select a size'}
-                    </p>
-                  </div>
-                )}
-
-                {(isGloballyOutOfStock || allVariantsOOS) ? (
-                  <div className="mt-3">
-                    <WaitlistButton productId={product.id} variant={selectedVariant || 'Default'} />
-                  </div>
-                ) : isSelectedVariantOOS ? (
-                  <>
-                    <div className="mt-3">
-                      <span className="block text-center text-red-500 font-bold text-sm uppercase tracking-wider border border-red-800 bg-red-900/20 py-1.5 rounded">
-                        Out of Stock
-                      </span>
-                    </div>
-                    <div className="mt-2">
-                      <WaitlistButton productId={product.id} variant={selectedVariant || 'Default'} />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="mt-3 flex items-center gap-3">
-                      <button
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center"
-                      >
-                        -
-                      </button>
-                      <span className="text-white w-8 text-center">{quantity}</span>
-                      <button
-                        onClick={() => setQuantity(quantity + 1)}
-                        className="text-gray-400 hover:text-white border border-gray-700 rounded w-8 h-8 flex items-center justify-center"
-                      >
-                        +
-                      </button>
-                    </div>
+                {/* Action Row: Wishlist + Add to Cart / Waitlist */}
+                <div className="flex items-center gap-2 pt-2 border-t border-gray-800/50">
+                  <WishlistButton
+                    productId={product.id}
+                    variant="Default"
+                    className="text-gray-400 hover:text-white transition p-1"
+                  />
+                  {isOOS ? (
+                    <WaitlistButton
+                      productId={product.id}
+                      variant="Default"
+                      className="text-xs text-gray-400 hover:text-white transition flex-1 text-center py-1 border border-gray-700 rounded hover:border-gray-500"
+                    />
+                  ) : (
                     <button
-                      onClick={() => handleAddToCart(product, selectedVariant, quantity)}
-                      className="mt-3 w-full bg-white text-black py-2 rounded hover:bg-gray-200 transition font-medium text-sm"
+                      onClick={() => handleAddToCart(product, 1)}
+                      className="w-full text-sm font-medium bg-white text-black py-1.5 rounded hover:bg-gray-200 transition flex items-center justify-center gap-1"
                     >
                       Add to Cart
                     </button>
-                  </>
-                )}
-
-                <div className="flex items-center justify-between mt-3">
-                  {!isService && <SizeGuideModal productSpecs={product.specifications || {}} />}
-                  <WishlistButton productId={product.id} variant={selectedVariant || 'Default'} className="text-gray-400 hover:text-red-500 transition" />
+                  )}
                 </div>
               </div>
             </div>

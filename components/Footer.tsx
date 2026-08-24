@@ -49,7 +49,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="text-center md:text-left">
             <h2 className="text-2xl old-english text-white">REAPER CREW</h2>
-            <p className="text-gray-500 text-sm">Tactical gear & media packages.</p>
+            <p className="text-gray-500 text-sm">Tactical Gear & Media Packages.</p>
           </div>
 
           {/* Links & Socials */}

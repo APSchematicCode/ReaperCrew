@@ -1,10 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import Header from '@/components/Header'
 import ProductGrid from '@/components/ProductGrid'
-import { redirect } from 'next/navigation'
-
-
-
+import Link from 'next/link'
 
 interface SearchParams {
   search?: string
@@ -21,17 +18,14 @@ export default async function ShopPage({
 
   let query = supabase.from('products').select('*')
 
-  // 1. Search (name or description)
   if (search) {
     query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`)
   }
 
-  // 2. Filter by type
   if (type && type !== 'all') {
     query = query.eq('product_type', type)
   }
 
-  // 3. Sorting
   if (sort === 'price-asc') {
     query = query.order('price', { ascending: true })
   } else if (sort === 'price-desc') {
@@ -52,23 +46,25 @@ export default async function ShopPage({
     <main className="min-h-screen bg-black">
       <Header />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="text-4xl font-old-english text-white mb-4">Shop</h1>
+        <h1 className="text-4xl font-oldenglish text-white mb-2">Shop</h1>
         <p className="text-gray-400 mb-8">Browse our gear and media packages.</p>
 
-        {/* Filter & Search Bar */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 bg-gray-900 p-4 rounded-lg border border-gray-800">
+        {/* ✅ Sleek Filter Bar */}
+        <div className="flex flex-col md:flex-row gap-4 mb-10 bg-gray-900/50 backdrop-blur-sm p-4 rounded-xl border border-gray-800/50">
           <form action="/shop" method="GET" className="flex-1 flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              name="search"
-              placeholder="Search products..."
-              defaultValue={search || ''}
-              className="flex-1 px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
-            />
+            <div className="relative flex-1">
+              <input
+                type="text"
+                name="search"
+                placeholder="Search products..."
+                defaultValue={search || ''}
+                className="w-full px-4 py-2.5 bg-black/70 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-500 transition"
+              />
+            </div>
             <select
               name="type"
               defaultValue={type || 'all'}
-              className="px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
+              className="px-4 py-2.5 bg-black/70 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-gray-500 transition"
             >
               <option value="all">All Types</option>
               <option value="merch">Merch</option>
@@ -77,21 +73,27 @@ export default async function ShopPage({
             <select
               name="sort"
               defaultValue={sort || 'default'}
-              className="px-4 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-gray-500"
+              className="px-4 py-2.5 bg-black/70 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-gray-500 transition"
             >
               <option value="default">Sort by: Default</option>
-              <option value="popularity">Sort by: Popularity</option>
-              <option value="price-asc">Sort by: Price (Low to High)</option>
-              <option value="price-desc">Sort by: Price (High to Low)</option>
+              <option value="popularity">Popularity</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
             </select>
-            <button type="submit" className="bg-white text-black px-6 py-2 rounded font-medium hover:bg-gray-200 transition">
+            <button
+              type="submit"
+              className="bg-white text-black px-6 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition"
+            >
               Apply
             </button>
           </form>
           {(search || type || sort) && (
-            <a href="/shop" className="text-gray-400 hover:text-white text-sm flex items-center">
+            <Link
+              href="/shop"
+              className="text-gray-400 hover:text-white text-sm flex items-center px-2 transition"
+            >
               Clear Filters
-            </a>
+            </Link>
           )}
         </div>
 
